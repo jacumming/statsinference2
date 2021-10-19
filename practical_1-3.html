@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Practical 1-3: Likelihood Inference</title>
+
+<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">
+    <span class="fa fa-home"></span>
+     
+    Home
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Term 1
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="practical_1-1.html">Practical 1 - Introduction to R</a>
+    </li>
+    <li>
+      <a href="practical_1-2.html">Practical 2 - Sampling and Simulation</a>
+    </li>
+    <li>
+      <a href="practical_1-3.html">Practical 3 - Likelihood Inference</a>
+    </li>
+    <li>
+      <a href="practical_1-4.html">Practical 4 - Bayesian Inference</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Term 2
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="practical_2-1.html">Practical 1</a>
+    </li>
+    <li>
+      <a href="practical_2-2.html">Practical 2</a>
+    </li>
+    <li>
+      <a href="practical_2-3.html">Practical 3</a>
+    </li>
+    <li>
+      <a href="practical_2-4.html">Practical 4</a>
+    </li>
+    <li>
+      <a href="practical_2-5.html">Practical 5</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="install.html">
+    <span class="fa fa-download"></span>
+     
+    Install
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    <span class="fa fa-question-circle"></span>
+     
+    R Help
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="r_1_gettingstarted.html">1. Getting Started</a>
+    </li>
+    <li>
+      <a href="r_2_variables.html">2. Variables</a>
+    </li>
+    <li>
+      <a href="r_3_functions.html">3. Functions</a>
+    </li>
+    <li>
+      <a href="r_4_vectors.html">4. Vectors</a>
+    </li>
+    <li>
+      <a href="r_5_basicstats.html">5. Standard statistical functions</a>
+    </li>
+    <li>
+      <a href="r_6_matrices.html">6. Matrices and data frames</a>
+    </li>
+    <li>
+      <a href="r_7_plots.html">7. Plots</a>
+    </li>
+    <li>
+      <a href="r_8_advplots.html">8. Advanced Plots</a>
+    </li>
+    <li>
+      <a href="r_9_programming.html">9. Programming</a>
+    </li>
+    <li>
+      <a href="r_10_statsmethods.html">10. Statistical methods</a>
+    </li>
+    <li class="divider"></li>
+    <li>
+      <a href="rstudio-ide.pdf">Cheatsheet: RStudio infterface</a>
+    </li>
+    <li>
+      <a href="base-r.pdf">Cheatsheet: Base R</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Practical 1-3: Likelihood Inference</h1>
+
+</div>
+
+
+<!-- We have seen in lectures that the MLEs for the parameters of several common distributions can be found in closed form. However, in general, the problem is not guaranteed to be so easy with a simple closed-form result. Therefore, in these situations, we will have to find and maximise the likelihood numerically. -->
+<!-- For this practical, we will focus on the Poisson distribution, which is particularly appropriate for counts of events occuring randomly in time or space. Suppose we have a simple problem with one piece of data, $X$, and we know that $X\sim\text{Po}(\lambda)$ for some unknown parameter value $\lambda$.  -->
+<!--    *  [Download the R Script](scripts/practical_1-4.R) - Right click, and Save As -->
+<!-- ```{block2, type='goals'} -->
+<!--  *  You will need the following skills from previous practicals: -->
+<!--     *   Basic R skills with arithmetic, functions, etc -->
+<!--     *   Manipulating and creating vectors: `c`, `seq`, -->
+<!--     *   Calculating data summaries: `mean`, `sum`, `length` -->
+<!--     *   Plotting with `plot` and `hist`, and adding lines to plots with `lines` and `abline` -->
+<!--     *   Repeatedly applying a function to a vector using `sapply` -->
+<!--  *  New R techniques: -->
+<!--     *   Optimising a function with `optim` -->
+<!--     *   Extracting named elements of a list using the `$` operator -->
+<!-- ``` -->
+<!-- # The Poisson Likelihood -->
+<!-- Our likelihood calculations begin with writing down the likelihood function of our data. For a single observation $X=x$ from a Poisson distribution, the likelihood is the the probability of observing $X=x$ written as a function of the parameter $\lambda$: -->
+<!-- \[ -->
+<!-- \ell(\lambda) = \mathbb{P}[X=x~|~\lambda] = \frac{e^{-\lambda}\lambda^x}{x!}. -->
+<!-- \] -->
+<!-- To begin with, suppose we observe a count of $X=5$. -->
+<!-- ```{block2, type='question'} -->
+<!--    * Write a simple function called `poisson` that takes arguments `lambda` which evaluates the Poisson probability $\mathbb{P}[X=5~|~\lambda]$. -->
+<!--      _Hint_: You will need the `exp` and `factorial` functions. -->
+<!--    * Evaluate the Poisson probability for $X=5$ when $\lambda=7$ - you should get a value of `0.1277167`. -->
+<!-- ``` -->
+<!-- ```{r eval=TRUE, echo=FALSE, results='hide'} -->
+<!-- 'poisson' <- function(lambda){ -->
+<!--   p <- exp(-lambda)*lambda^5/factorial(5) -->
+<!-- } -->
+<!-- poisson(7) -->
+<!-- ``` -->
+<!-- What we have just created is the likelihood function, $\ell(\lambda)$, for the Poisson parameter $\lambda$ given a single observation of $X=5$.  -->
+<!-- Before we consider a larger data problem, let's briefly explore this simplest case of a Poisson likelihood. -->
+<!-- ```{block2, type='question'} -->
+<!--    * Create a `seq`uence of `length` 200 from `0.1` to `20`. Save this as `lambdavals`.  -->
+<!--    * Use `sapply` to evaluate the Poisson likelihood function for every value of $\lambda$ in `lambdavals`. Save this as `like5`. -->
+<!--    * Draw a `plot` of the Poisson likelihood as a function of lambda. Use `ty='l'` to draw a line graph. -->
+<!--    * By eye, what is the value $\hat{\lambda}$ of $\lambda$ which maximises the likelihood? -->
+<!-- ``` -->
+<!-- ```{r eval=TRUE, echo=FALSE, results='hide', fig.show='asis'} -->
+<!-- lambdavals <- seq(0.1,20,length=200) -->
+<!-- like5 <- sapply(lambdavals, poisson) -->
+<!-- plot(x=lambdavals, y=like5, ty='l',ylab='Likelihood', xlab=expression(lambda)) -->
+<!-- ``` -->
+<!-- Typically, we usually work with the log-likelihood $\mathcal{L}(\lambda)=\log\ell(\lambda)$, rather than the likelihood itself. This can often make the mathematical maximisation simpler, the numerical computations more stable, and it is also intrinsically connected to the idea of *information* (which we will consider later). -->
+<!-- ```{block2, type='question'} -->
+<!--    * Modify your `poisson` function to compute the logarithm of the Poisson probability, and call this `logPoisson`. You will need to use the `log` function. -->
+<!--    * Evaluate the log likelihood function for all $\lambda$ in `lambdavals` and plot the log-likelihood against $\lambda$. Do you find the same maximum value $\widehat{\lambda}$? -->
+<!-- ``` -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- 'logPoisson' <- function(lambda){ -->
+<!--   ## lazy way -->
+<!--   #p <- log(exp(-lambda)*lambda^5/factorial(5)) -->
+<!--   ## smarter way -->
+<!--   p <- -lambda+5*log(lambda)-log(factorial(5)) -->
+<!--   return(p) -->
+<!-- } -->
+<!-- ll5 <- sapply(lambdavals, logPoisson) -->
+<!-- plot(x=lambdavals, y=ll5, ty='l') -->
+<!-- ``` -->
+<!-- # Likelihood methods for real data -->
+<!-- The Poisson distribution has been used by traffic engineers as a model for light traffic. This assumption is based on the rationale that if the rate is approximately constant and the traffic is light (so the individual cars move independently of each other), then the distribution of counts of cars in a given time interval or space area should be nearly Poisson (Gerlough and Schuhl 1955).  -->
+<!-- The following table shows the number of right turns during 300 3-minute intervals at a specific junction. -->
+<!-- ```{r echo=FALSE, results='asis'} -->
+<!-- n <- 0:12 -->
+<!-- freq <- c(14,30,36,68,43,43,30,14,10,6,4,1,1) -->
+<!-- D <- t(data.frame("N"=n,"Frequency"=freq)) -->
+<!-- library(knitr) -->
+<!-- library(kableExtra) -->
+<!-- kable(D,"html") %>% -->
+<!--   kable_styling(bootstrap_options = c("striped")) %>% -->
+<!--   column_spec(1, bold = TRUE) -->
+<!-- ``` -->
+<!-- ```{r eval=TRUE, echo=TRUE, results='hide'} -->
+<!-- traffic <- rep(0:12, c(14,30,36,68,43,43,30,14,10,6,4,1,1)) -->
+<!-- ``` -->
+<!-- ```{block2, type='question'} -->
+<!--    * Evaluate the piece of code above to create the vector `traffic` corresponding to the above data set. -->
+<!--    * Plot a `hist`ogram of the data. Does an assumption of a Poisson distribution appear reasonable? -->
+<!-- ``` -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- hist(traffic) -->
+<!-- ``` -->
+<!-- If we suppose a Poisson distribution might be a good choice of distribution for this dataset, we still need to find out which particular Poisson distribution is best by estimating the parameter $\lambda$.  -->
+<!-- Let's begin by constructing the likelihood and log-likelihood functions for this data set of 300 observations. Assuming that the observations $x_1, \dots, x_{300}$ can be treated as 300 i.i.d. values from $\text{Po}(\lambda)$, the log-likelihood function for the entire sample is: -->
+<!-- \[ -->
+<!-- \mathcal{L}(\lambda) = -n\lambda +\left(\sum_{i=1}^n x_i \right) \log \lambda, -->
+<!-- \] -->
+<!-- up to an additive constant from the factorial terms (which we can ignore). -->
+<!-- ```{block2, type='question'} -->
+<!--    * Write a new functions `logLike` with a single parameter `lambda`, which evaluates the log-likelihood expression above for the `traffic` data and the supplied values of `lambda`. -->
+<!--     _Hint_: Use `length` and `sum` to compute the summary statistics. -->
+<!--    * Evaluate the data log-likelihood for all $\lambda$ in `lambdavals` and plot the log-likelihood against $\lambda$. Without further calculations, use the plot to have a guess at the maximum likelihood estimate $\widehat{\lambda}$ -- we'll check this later! -->
+<!-- ``` -->
+<!-- ```{r eval=TRUE, echo=FALSE, results='hide', fig.show='asis'} -->
+<!-- 'logLike' <- function(lambda){ -->
+<!--   n <- length(traffic) -->
+<!--   s <- sum(traffic) -->
+<!--   ll <- -n*lambda + s*log(lambda)  -->
+<!--   return(ll) -->
+<!-- } -->
+<!-- ll <- sapply(lambdavals, logLike) -->
+<!-- plot(x=lambdavals, y=ll, ty='l',xlab=expression(lambda),ylab='log likelihood') -->
+<!-- ``` -->
+<!-- ## Maximising the likelihood -->
+<!-- The *maximum likelihood estimate (MLE)* $\widehat{\lambda}$ for the $\lambda$ parameter of the Poisson distribution is the value of $\lambda$ which maximises the likelihood -->
+<!-- \[ -->
+<!-- \widehat{\lambda}=\operatorname{argmax}_{\lambda\in\Omega} \ell(\lambda)= \operatorname{argmax}_{\lambda\in\Omega} \mathcal{L}(\lambda). -->
+<!-- \] -->
+<!-- Therefore to find the MLE, we must maximise $\ell$ or $\mathcal{L}$. We know we can do this analytically for certain common distributions, but in general we'll have to optimise the function numerically instead. For such problems, `R` provides various functions to perform a numerical optimisation of a give function (even one we define ourself). The function we will focus on is `optim`: -->
+<!-- ```{block2, type='technique'} -->
+<!-- `R` offers several optimisation functions, however the one we shall be using today is `optim` which is one of the most general optimisation functions. This generality comes at the price of having a lot of optional parameters that need to be specified. -->
+<!-- For our purposes, we're doing a 1-dimensional optimisation of a given function named `logLike`. So the syntax we will use to maximise this function is as follows -->
+<!-- `optim(start, logLike, lower=lwr, upper=upr, method='Brent', control=list(fnscale=-1))` -->
+<!-- The arguments are: -->
+<!--    * `start` : an initial value for $\lambda$ at which to start the optimisation. *Replace this with a sensible value.* -->
+<!--    * `logLike` : this is the function we're optimising. In general, we can replace this with any other function. -->
+<!--    * `lower=lwr, upper=upr` : lower and upper bounds to our search for $\widehat{\lambda}$. *Replace `lwr` and `upr`  with appropriate numerical values*; an obvious choice for this problem is the min and max of our data. -->
+<!--    * `method='Brent'` : this selects an appropriate optimisation algorithm for a 1-D optimisation. -->
+<!--    * `control=list(fnscale=-1)` : this looks rather strange, but is simply telling `optim` to *max*imise the given function, rather than *min*imise (which is the default). -->
+<!-- `optim` returns a number of values in the form of a list. The relevant components are: -->
+<!--    * `par` : the optimal value of the parameter -->
+<!--    * `value` : the optimum of the function being optimised. -->
+<!-- ``` -->
+<!-- ```{block2, type='question'} -->
+<!--    * Use `optim` to maximise the `logLike` function. You should choose an appropriate initial value for $\lambda$, as well as sensible `upper` and `lower` bounds. -->
+<!--    * What value of $\widehat{\lambda}$ do you obtain? How does this compare to your guess at the MLE? -->
+<!--    * We know from lectures that the $\widehat{\lambda}=\bar{X}$ -- evaluate the sample mean of the `traffic` data. Does this agree with your results from directly maximising the log-likelihood? -->
+<!-- ``` -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- ret <- optim(1, logLike, lower=0, upper=12, method='Brent', control=list(fnscale=-1)) -->
+<!-- ``` -->
+<!-- ```{block2, type='technique'} -->
+<!-- The output of `optim` is in the form of a `list`. Unlike vectors, `list`s can combine many different variables together (numbers, strings, matrices, etc) and each element of a list can be given a name to make it easier to access. -->
+<!-- For example, we can create our own lists using the `list` function: -->
+<!-- ` test <- list(Name='Donald', IQ=-10, Vegetable='Potato')` -->
+<!-- Once created, we can access the named elements of the list using the `$` operator. For example, -->
+<!-- ` test$IQ` -->
+<!-- will return the value saved to `IQ` in the list, i.e. `-10`. RStudio will show auto-complete suggestions for the elements of the list after you press `$`, which can help make life easier. -->
+<!-- We can use this to extract the MLE value from `optim` by first saving the results to a variable, called `results` say, and then extracting the list element named `par`. -->
+<!-- ``` -->
+<!-- ```{block2, type='question'} -->
+<!--    * Extract the optimal value of $\lambda$ from the output of `optim` and save it to a new variable called `mle`. -->
+<!--    * Re-draw your plot of the log-likelihood function, and use `abline` to: -->
+<!--       * Add a red solid vertical line at $\lambda=\widehat{\lambda}$ -->
+<!--       * Add a blue dashed vertical line at $\lambda=\bar{x}$. -->
+<!--    * Do the results agree with each other, and with your guess at $\widehat{\lambda}$? -->
+<!-- ``` -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- mle <- ret$par -->
+<!-- plot(x=lambdavals, y=ll,ty='l') -->
+<!-- abline(v=mle,col='red') -->
+<!-- abline(v=mean(traffic), col='blue', lty=2) -->
+<!-- ``` -->
+<!-- Let's return to the original distribution of the data. The results of our log-likelihood analysis suggest that a Poisson distribution with parameter $\widehat{\lambda}$ is the best choice of Poisson distributions for this data set. -->
+<!-- ```{block2, type='question'} -->
+<!--    * Re-draw the `hist`ogram of the `traffic` data. -->
+<!--    * For $x=0,1,\dots,16$ evaluate the Poisson probability $\mathbb{P}[X=x]$ when $X\sim\text{Po}(\widehat{\lambda})$. Save these probabilities as `probs`. -->
+<!--    * Multiply `probs` by the sample size to obtain the expected Poisson counts under this $\text{Po}(\widehat{\lambda})$ distribution. -->
+<!--    * Use the `lines` function to overlay the expected $\text{Po}(\widehat{\lambda})$ counts as a curve on top of your histogram. Does this look like a good fit to the data? -->
+<!-- ``` -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- hist(traffic) -->
+<!-- xs <- 0:16 -->
+<!-- lines(x=xs,y=300*dpois(xs,lambda=mle),col='red',lwd=2) -->
+<!-- ``` -->
+<!-- We will return to the question of fitting distributions to data and the "goodness of fit" later next term. -->
+<!-- ## Information and inference -->
+<!-- For an iid sample $X_1,\dots,X_n$ from a sufficiently nicely-behaved density function $f(x_i~|~\theta)$ with unknown parameter $\theta$, the sampling distribution of the MLE $\widehat{\theta}$ is such that  -->
+<!--    \[ -->
+<!--    \widehat{\theta} \rightsquigarrow \text{N}\left(\theta, \frac{1}{\mathcal{I}_n(\theta)}\right), -->
+<!--    \] -->
+<!-- as $n \rightarrow\infty$. Whilst we may be used to finding Normal distributions in unusual places, this result is noteworthy as we never assumed any particular distribution of our data here. This result therefore provides us with a general method for making inferences about parameters of distributions and their MLEs for problems involving large samples! -->
+<!-- In particular, we can apply this to our Poisson data problem above to construct a large-sample approximate $100(1-\alpha)\%$ confidence interval for $\lambda$ in the form: -->
+<!-- \[ -->
+<!-- \widehat{\lambda} \pm z^*_{\alpha/2} \frac{1}{\sqrt{-\mathcal{L}''(\widehat{\lambda})}}, -->
+<!-- \] -->
+<!-- where $z^*_{\alpha/2}$ is the $\alpha/2$ critical value of a standard Normal distribution and we have estimated the expected Fisher information $\mathcal{I}_n(\theta)$ by the observed information $I(\widehat{\lambda})=-\mathcal{L}''(\widehat{\lambda})$. -->
+<!-- ```{block2, type='question'} -->
+<!--    * We can request that `R` computes the second derivative at the maximum, $\mathcal{L}''(\widehat{\lambda})$, as part of the maximisation process. To do this, re-run your optimisation, but add the additional argument `hessian=TRUE`. -->
+<!--    * The output from `optim` will now contain an additional element named `hessian`. Extract this element, multiply by -1, and save it as `obsInfo`. -->
+<!--    * Irritatingly, `obsInfo` will be in the form of a $1\times 1$ matrix rather than a scalar (as the Hessian matrix is a matrix of the second order partial derivatives). Run the following code to flatten it into a scalar so we can use it in our confidence interval: -->
+<!--    `obsInfo <- c(obsInfo)` -->
+<!-- ``` -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- ret <- optim(1, logLike, method='Brent', lower=0, upper=100, control=list(fnscale=-1), hessian=TRUE) -->
+<!-- obsInfo <- -1*ret$hessian -->
+<!-- obsInfo <- c(obsInfo) -->
+<!-- ``` -->
+<!-- ```{block2, type='question'} -->
+<!--    * Use `qnorm` or your standard Normal tables to find the critical $z^*_{\alpha/2}$ value for a 95\% confidence interval. Save this as `zcrit`. -->
+<!--    * Combine `mle`, `zcrit`, and `obsInfo` to evaluate an approximate 95\% confidence interval for $\lambda$. -->
+<!--    * Return (and possibly re-draw) the plot of your log-likelihood function, with the MLE indicated as a vertical line. Add the limits of the confidence interval to your plot as vertical green lines. -->
+<!--    * Comment on the reliability of your estimate. -->
+<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
+<!-- zstar <- qnorm(0.975) -->
+<!-- upr <- mle + zstar * sqrt(1/obsInfo) -->
+<!-- lwr <- mle - zstar * sqrt(1/obsInfo) -->
+<!-- ci <- c(lwr,upr) -->
+<!-- ci -->
+<!-- plot(x=lambdavals, y=ll,ty='l') -->
+<!-- abline(v=mle,col='red') -->
+<!-- abline(v=ci, col='green') -->
+<!-- ``` -->
+<!-- <!-- # Confidence intervals -->
+<p>–&gt;</p>
+<!-- <!-- Repeated CI sampling and sample size -->
+<p>–&gt;</p>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>R Techniques 8: Advanced Plots</title>
+
+<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">
+    <span class="fa fa-home"></span>
+     
+    Home
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Term 1
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="practical_1-1.html">Practical 1 - Introduction to R</a>
+    </li>
+    <li>
+      <a href="practical_1-2.html">Practical 2 - Sampling and Simulation</a>
+    </li>
+    <li>
+      <a href="practical_1-3.html">Practical 3 - Likelihood Inference</a>
+    </li>
+    <li>
+      <a href="practical_1-4.html">Practical 4 - Bayesian Inference</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Term 2
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="practical_2-1.html">Practical 1</a>
+    </li>
+    <li>
+      <a href="practical_2-2.html">Practical 2</a>
+    </li>
+    <li>
+      <a href="practical_2-3.html">Practical 3</a>
+    </li>
+    <li>
+      <a href="practical_2-4.html">Practical 4</a>
+    </li>
+    <li>
+      <a href="practical_2-5.html">Practical 5</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="install.html">
+    <span class="fa fa-download"></span>
+     
+    Install
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    <span class="fa fa-question-circle"></span>
+     
+    R Help
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="r_1_gettingstarted.html">1. Getting Started</a>
+    </li>
+    <li>
+      <a href="r_2_variables.html">2. Variables</a>
+    </li>
+    <li>
+      <a href="r_3_functions.html">3. Functions</a>
+    </li>
+    <li>
+      <a href="r_4_vectors.html">4. Vectors</a>
+    </li>
+    <li>
+      <a href="r_5_basicstats.html">5. Standard statistical functions</a>
+    </li>
+    <li>
+      <a href="r_6_matrices.html">6. Matrices and data frames</a>
+    </li>
+    <li>
+      <a href="r_7_plots.html">7. Plots</a>
+    </li>
+    <li>
+      <a href="r_8_advplots.html">8. Advanced Plots</a>
+    </li>
+    <li>
+      <a href="r_9_programming.html">9. Programming</a>
+    </li>
+    <li>
+      <a href="r_10_statsmethods.html">10. Statistical methods</a>
+    </li>
+    <li class="divider"></li>
+    <li>
+      <a href="rstudio-ide.pdf">Cheatsheet: RStudio infterface</a>
+    </li>
+    <li>
+      <a href="base-r.pdf">Cheatsheet: Base R</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">R Techniques 8: Advanced Plots</h1>
+
+</div>
+
+
+<div id="advanced-plots" class="section level1" number="1">
+<h1 number="1"><span class="header-section-number">1</span> Advanced plots</h1>
+<div id="plot-custom" class="section level2" number="1.1">
+<h2 number="1.1"><span class="header-section-number">1.1</span> Customising plots</h2>
+<p>Many high level plotting functions (<code>plot</code>, <code>hist</code>, <code>boxplot</code>, etc.) allow you to include additional options to customise how the plot is drawn (as well as other graphical parameters). We have seen examples of these already with the axis label arguments <code>xlab</code> and <code>ylab</code>, however we can customise the following plot features for finer control of how a plot is drawn.</p>
+<div id="xlim" class="section level3" number="1.1.1">
+<h3 number="1.1.1"><span class="header-section-number">1.1.1</span> Axis limits</h3>
+<p>To control the ranges of the horizontal and vertical axes, we can add the <code>xlim</code> and <code>ylim</code> arguments to our original plotting command. To set the horixontal axis limits, we pass a vector of two numbers to represent the lower and upper limits, <code>xlim = c(lower, upper)</code>, and repeat the same for <code>ylim</code> to customise the vertical axis.</p>
+<pre class="r"><code>plot(x=mtcars$wt, y=mtcars$mpg, xlab=&quot;Weight&quot;, ylab=&quot;MPG&quot;, 
+     main=&quot;MPG vs Weight&quot;, xlim=c(0,6), ylim=c(0,40))</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+</div>
+<div id="col" class="section level3" number="1.1.2">
+<h3 number="1.1.2"><span class="header-section-number">1.1.2</span> Colour</h3>
+<p>Using colour in a plot can be very effective, for example to highlight different groups within the data. Colour is adjusted by setting the <code>col</code> optional arugment to the plotting function, and what <em>R</em> does with that information depends on the value we supply.</p>
+<ul>
+<li><code>col</code> is assigned a single value: all points on a scatterplot, all bars of a histogram, all boxplots are coloured with the new colour</li>
+<li><code>col</code> is a vector:
+<ul>
+<li>in a scatterplot, if <code>col</code> is a vector of the same length as the number of data points then each data point is coloured individually</li>
+<li>in a histogram, if <code>col</code> is a vector of the same length as the number of bars then each bar is coloured individually</li>
+<li>in a boxplot, if <code>col</code> is a vector of the same length as the number of boxplots then each boxplot is coloured individually</li>
+<li>if the vector is not of the correct length, it will be replicated until it is and the above rules apply</li>
+</ul></li>
+</ul>
+<p>Now that we know how the <code>col</code> argument works, we need to know how to specify colours. Again, there are a number of ways and you can mix and match as appropriate</p>
+<ul>
+<li><em>Integers</em>: The integers <code>1:8</code> are interpreted as colours (black, red, green, blue, …) and can be used as a quick shorthand for a common colour. Type <code>palette()</code> to see the sequence of colours <em>R</em> uses.</li>
+<li><em>Names</em>: <em>R</em> recognises over 650 named colours is specified as text, e.g.<code>"steelblue"</code>, <code>"darkorange"</code>. You can see the list of recognised names by typing <code>colors()</code>, and a document showing the actual colors is available <a href="http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf">here</a></li>
+<li><em>Hexadecimal</em>: <em>R</em> can recognise colours specified as hexadecimal RGB codes (as used in HTML etc), so pure red can be specified as <code>"#ff0000"</code> and cyan as <code>"#00ffff"</code>.</li>
+<li><em>Colour functions</em>: <em>R</em> has a number of functions that will generate a number of colours for use in plotting. These functions include <code>rainbow</code>, <code>heat.colors</code>, and <code>terrain.colors</code> and all take the number of desired colours as argument.</li>
+</ul>
+<pre class="r"><code>## 3 plots in one row
+par(mfrow=c(1,3))
+## colour the cars data by number of gears
+plot(x=mtcars$wt, y=mtcars$mpg, col=mtcars$gear, xlab=&quot;Weight&quot;, ylab=&quot;MPG&quot;, 
+     main=&quot;MPG vs Weight&quot;)
+## manually colour boxplots
+boxplot(mpg~cyl, data=mtcars, col=c(&quot;orange&quot;,&quot;violet&quot;,&quot;steelblue3&quot;),
+        main=&quot;Car Milage Data&quot;, xlab=&quot;Number of Cylinders&quot;, 
+        ylab=&quot;Miles Per Gallon&quot;)
+## use a colour function to shade histogram bars
+hist(mtcars$mpg,col=rainbow(5))</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/colors.html">colors</a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/palette.html">palette</a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/Palettes.html">color functions</a></p>
+</div>
+<div id="pch" class="section level3" number="1.1.3">
+<h3 number="1.1.3"><span class="header-section-number">1.1.3</span> Plotting symbols</h3>
+<p>The symbols used for points in scatter plots can be changed by specifying a value for the argument <code>pch</code> {#pch} (which stands for <strong>p</strong>lot <strong>ch</strong>aracter). Specifying values for <code>pch</code> works in the same way as <code>col</code>, though <code>pch</code> only accepts integers between 1 and 20 to represent different point types. The default is <code>pch=1</code> which is a hollow circle. The possible values of <code>pch</code> are shown in the plot below:</p>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="lwd" class="section level3" number="1.1.4">
+<h3 number="1.1.4"><span class="header-section-number">1.1.4</span> Lines</h3>
+<p>When drawing plots with lines instead of points, we can customise the line style by specifying the line width and line type. Line width is specified by <code>lwd</code> {#lwd} (for <strong>l</strong>ine <strong>w</strong>i<strong>d</strong>th) and is given a single numerical value which is interpreted as the width of the line relative to the default width of <code>lwd=1</code>. So, <code>lwd=2</code> produces lines that are twice as wide.</p>
+<p>Line types are specified via the <code>lty</code> {#lty} argument as integers corresponding to 6 different line styles shown in the plot below:</p>
+<pre class="r"><code>plot(1:6,axes=FALSE,ty=&#39;n&#39;,ylim=c(0,7),xlab=&#39;&#39;,ylab=&#39;&#39;,main=&#39;Line types, lty=&#39;)
+abline(h=1:6,lty=1:6,lwd=2,col=&#39;forestgreen&#39;)
+axis(2,at=1:6)
+box()</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
+</div>
+<div id="adding-to-plots" class="section level2" number="1.2">
+<h2 number="1.2"><span class="header-section-number">1.2</span> Adding to plots</h2>
+<p>Once we have created a plot using the methods above, we often want to add additional information, such as points, lines, or a legend.</p>
+<div id="points" class="section level3" number="1.2.1">
+<h3 number="1.2.1"><span class="header-section-number">1.2.1</span> Adding points</h3>
+<p>Additional points can be added to a plot using the <code>points</code> function. It is used in the same way as <code>plot</code> for drawing a scatterplot, but it can only add further points to an existing plot.</p>
+<p>For example, we can add the sample mean values as a red star to the plot of car weight vs miles-per-gallon</p>
+<pre class="r"><code>plot(x=mtcars$wt, y=mtcars$mpg, col=mtcars$gear, xlab=&quot;Weight&quot;, ylab=&quot;MPG&quot;, 
+     main=&quot;MPG vs Weight&quot;)
+points(x=mean(mtcars$wt), y=mean(mtcars$mpg), col=&#39;red&#39;, pch=8)</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/points.html">points</a></p>
+</div>
+<div id="lines" class="section level3" number="1.2.2">
+<h3 number="1.2.2"><span class="header-section-number">1.2.2</span> Adding lines</h3>
+<p>It is often useful to add simple straight lines to lines to plots, which can be achieved using the <code>abline</code> function. <code>abline</code> can be used in three different ways:</p>
+<ul>
+<li>Draw a horizontal line: pass a value to the <code>h</code> argument, <code>abline(h=3)</code> draws a horizontal line at <span class="math inline">\(y=3\)</span></li>
+<li>Draw a vertical line: pass a value to the <code>c</code> argument, <code>abline(v=5)</code> draws a vertical line at <span class="math inline">\(x=5\)</span></li>
+<li>Draw a line with given intercept and slope: pass value to the <code>a</code> and <code>b</code> arguments representing the intercept and slope respectively; <code>abline(a=1,b=2)</code> draws the line at <span class="math inline">\(y=1+2x\)</span></li>
+</ul>
+<p><code>abline</code> {#abline} can be customised using any of the colour and line modifications discussed above.</p>
+<pre class="r"><code>plot(x=mtcars$wt, y=mtcars$mpg, col=mtcars$gear, xlab=&quot;Weight&quot;, ylab=&quot;MPG&quot;, 
+     main=&quot;MPG vs Weight&quot;)
+points(x=mean(mtcars$wt), y=mean(mtcars$mpg), col=&#39;red&#39;, pch=8)
+abline(a=37.285, b=-5.344, col=&#39;red&#39;) ## line of best fit
+abline(h=mean(mtcars$mpg), col=&#39;violet&#39;, lty=3) ## horizontal line through ybar</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/abline.html">abline</a></p>
+<p>We can also use <em>R</em>’s line drawing functions to add curves to a plot via the <code>lines</code> {#lines} function, which works in exactly the same way as <code>point</code> only drawing connected lines rather than individual points. To add a function <span class="math inline">\(f(x)\)</span> to a plot, we must first construct a vector of <span class="math inline">\(x\)</span> values over the range of the plot, and then evaluate the function <span class="math inline">\(f\)</span> at each of them. We can then supply both vectors to <code>lines</code> as <code>x</code> and <code>y</code> and it will connect the points and draw the function on the current plot.</p>
+<p>For example, suppose we generate 500 random values from a standard normal distribution. We can plot their histogram via <code>hist</code>, but we can also use <code>dnorm</code> to evaluate the standard normal pdf and add it to the plot using the <code>lines</code> function:</p>
+<pre class="r"><code>randvals &lt;- rnorm(500)
+hist(randvals,freq=FALSE, ylim=c(0,0.45)) ## freq=FALSE to plot the density
+xs &lt;- seq(-5,5,length=500) ## make a sequence of x values
+ys &lt;- dnorm(xs) ## evaluate the N(0,1) pdf at each x value
+lines(y=ys,x=xs,col=&#39;red&#39;) ## plot the values as connected lines</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/lines.html">lines</a></p>
+</div>
+<div id="text" class="section level3" number="1.2.3">
+<h3 number="1.2.3"><span class="header-section-number">1.2.3</span> Adding text</h3>
+<p>In the same way as points and lines can be added to a plot, text annotations can be drawn on plots using the <code>text</code> function. Again, we must specify the <code>x</code> and <code>y</code> location(s) but now we must also supply the text to be drawn at each point via the <code>labels</code> argument. Text size can be adjusted by the <code>cex</code> argument, and the position of the text relative to the point specified can be adjusted by the <code>pos</code> argument.</p>
+<pre class="r"><code>plot(x=mtcars$wt, y=mtcars$mpg, main=&quot;Milage vs. Car Weight&quot;, 
+    xlab=&quot;Weight&quot;, ylab=&quot;Mileage&quot;, pch=18, col=&quot;blue&quot;)
+text(x=mtcars$wt, y=mtcars$mpg, labels=row.names(mtcars), cex=0.6, pos=4, col=&quot;red&quot;)</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/text.html">text</a></p>
+</div>
+<div id="legend" class="section level3" number="1.2.4">
+<h3 number="1.2.4"><span class="header-section-number">1.2.4</span> Adding a legend</h3>
+<p>The <code>legend</code> function adds legends to plots</p>
+<pre class="r"><code>legend(location, legend, ...)</code></pre>
+<p>The required arguments are:</p>
+<ul>
+<li><code>location</code>: There are several ways to indicate the location of the legend. You can give an <code>x,y</code> coordinate for the upper left hand corner of the legend. Often, it is easier to use one of the keywords <code>"bottom"</code>, <code>"bottomleft"</code>, <code>"left"</code>, <code>"topleft"</code>, <code>"top"</code>, <code>"topright"</code>, <code>"right"</code>, <code>"bottomright"</code>, or <code>"center"</code>.</li>
+<li><code>legend</code>: A character vector with the labels for each item in the legend.</li>
+</ul>
+<p>The <code>legend</code> function takes a number of optional arguments:</p>
+<ul>
+<li><code>...</code>: Other optional arguments to display in the legend to match each of the labels. If the legend labels colored lines, specify <code>col=</code> and a vector of colors. If the legend labels point symbols, specify <code>pch=</code> and a vector of point symbols. If the legend labels line width or line style, use <code>lwd=</code> or <code>lty=</code> and a vector of widths or styles. To create colored boxes for the legend, use <code>fill=</code> and a vector of colors.</li>
+<li><code>title</code>: a title for the legend box.</li>
+<li><code>horizontal</code>: display the legend items horizontally rather than vertically</li>
+</ul>
+<pre class="r"><code>boxplot(mtcars$mpg~mtcars$cyl, main=&quot;Milage by Car Weight&quot;,
+    yaxt=&quot;n&quot;, xlab=&quot;Milage&quot;, horizontal=TRUE, col=terrain.colors(3))
+legend(&quot;topright&quot;, title=&quot;Number of Cylinders&quot;, legend=c(&quot;4&quot;,&quot;6&quot;,&quot;8&quot;), fill=terrain.colors(3), horiz=TRUE)</code></pre>
+<p><img src="r_8_advplots_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/legend.html">legend</a></p>
+</div>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

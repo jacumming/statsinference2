@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+
+
+
+<title>Accessing R and RStudio</title>
+
+<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
+<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+<style type="text/css">code{white-space: pre;}</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+
+
+<link rel="stylesheet" href="styles.css" type="text/css" />
+
+
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+img {
+  max-width:100%;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+pre code {
+  padding: 0;
+}
+</style>
+
+
+<style type="text/css">
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #adb5bd;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script type="text/javascript">
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.tab('show');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+
+  // Navbar adjustments
+  var navHeight = $(".navbar").first().height() + 15;
+  var style = document.createElement('style');
+  var pt = "padding-top: " + navHeight + "px; ";
+  var mt = "margin-top: -" + navHeight + "px; ";
+  var css = "";
+  // offset scroll position for anchor links (for fixed navbar)
+  for (var i = 1; i <= 6; i++) {
+    css += ".section h" + i + "{ " + pt + mt + "}\n";
+  }
+  style.innerHTML = "body {" + pt + "padding-bottom: 40px; }\n" + css;
+  document.head.appendChild(style);
+});
+</script>
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<!-- code folding -->
+
+
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+
+
+</head>
+
+<body>
+
+
+<div class="container-fluid main-container">
+
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">
+    <span class="fa fa-home"></span>
+     
+    Home
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Term 1
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="practical_1-1.html">Practical 1 - Introduction to R</a>
+    </li>
+    <li>
+      <a href="practical_1-2.html">Practical 2 - Sampling and Simulation</a>
+    </li>
+    <li>
+      <a href="practical_1-3.html">Practical 3 - Likelihood Inference</a>
+    </li>
+    <li>
+      <a href="practical_1-4.html">Practical 4 - Bayesian Inference</a>
+    </li>
+  </ul>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Term 2
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="practical_2-1.html">Practical 1</a>
+    </li>
+    <li>
+      <a href="practical_2-2.html">Practical 2</a>
+    </li>
+    <li>
+      <a href="practical_2-3.html">Practical 3</a>
+    </li>
+    <li>
+      <a href="practical_2-4.html">Practical 4</a>
+    </li>
+    <li>
+      <a href="practical_2-5.html">Practical 5</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="install.html">
+    <span class="fa fa-download"></span>
+     
+    Install
+  </a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    <span class="fa fa-question-circle"></span>
+     
+    R Help
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="r_1_gettingstarted.html">1. Getting Started</a>
+    </li>
+    <li>
+      <a href="r_2_variables.html">2. Variables</a>
+    </li>
+    <li>
+      <a href="r_3_functions.html">3. Functions</a>
+    </li>
+    <li>
+      <a href="r_4_vectors.html">4. Vectors</a>
+    </li>
+    <li>
+      <a href="r_5_basicstats.html">5. Standard statistical functions</a>
+    </li>
+    <li>
+      <a href="r_6_matrices.html">6. Matrices and data frames</a>
+    </li>
+    <li>
+      <a href="r_7_plots.html">7. Plots</a>
+    </li>
+    <li>
+      <a href="r_8_advplots.html">8. Advanced Plots</a>
+    </li>
+    <li>
+      <a href="r_9_programming.html">9. Programming</a>
+    </li>
+    <li>
+      <a href="r_10_statsmethods.html">10. Statistical methods</a>
+    </li>
+    <li class="divider"></li>
+    <li>
+      <a href="rstudio-ide.pdf">Cheatsheet: RStudio infterface</a>
+    </li>
+    <li>
+      <a href="base-r.pdf">Cheatsheet: Base R</a>
+    </li>
+  </ul>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div id="header">
+
+
+
+<h1 class="title toc-ignore">Accessing R and RStudio</h1>
+
+</div>
+
+
+<p>For several Statistics modules, you will need access to the R programming language and an integrated development environment (IDE) for creating R programs (just as for other modules you will need access to the Python programming language and an IDE for creating Python programs). The best IDE for R, and the one you will use at Durham, is called RStudio.</p>
+<p>You can access these applications from a University computer directly, by installing a local copy of the programs on your own computer, or using the University’s AppsAnywhere to access University software without installing it yourself.</p>
+<p>Please read the instruction below to explain how to access these programs depending on the method you choose.</p>
+<div id="how-to-launch-rstudio-from-a-university-computer" class="section level1" number="1">
+<h1 number="1"><span class="header-section-number">1</span> How to launch RStudio from a University computer</h1>
+<p>You’ll find RStudio in the AppHub on all University computers. Open the AppHub (the purple university logo), and look for it in the list of applications or use the search box to filter the available apps.</p>
+<p>If multiple different versions of RStudio are available, it doesn’t really matter which you choose (go for the most recent, just in case).</p>
+<p>Note: It may take a little time for the application to load for the first time (anywhere from a few seconds, up to several minutes).</p>
+<p>You may also need access to the <code>durham</code> R library, which contains many data sets used in our modules. If you’re on a University computer, then the package should be installed on the network but you need to complete the following steps to make sure you can access it:</p>
+<ul>
+<li>Open the Windows File Explorer</li>
+<li>Then navigate “Computer” -&gt; T: -&gt; MATHS -&gt; R</li>
+<li>Double-click “Setup R for Maths”</li>
+<li>If you already have R or Rstudio open, you should now close it and reopen it.</li>
+</ul>
+<p><strong>Note:</strong> You will only need to do this once, and you will not need to do this if you are running R on your own computer.</p>
+<div id="how-to-launch-rstudio-in-appsanywhere" class="section level2" number="1.1">
+<h2 number="1.1"><span class="header-section-number">1.1</span> How to launch RStudio in AppsAnywhere</h2>
+<p>Access to the online university software is via AppsAnywhere. For more info about the AppsAnywhere environment visit:</p>
+<ul>
+<li><a href="https://www.dur.ac.uk/cis/desktop/windows/software/" class="uri">https://www.dur.ac.uk/cis/desktop/windows/software/</a></li>
+</ul>
+<p>In general, we would recommend either using a University computer to access the programs directly or making a local installation on your own computer will work better and faster. Local installations also work in the absence of an internet connection, so we advise you to install them even if you plan to use AppsAnywhere as your first choice.</p>
+<p>To launch AppsAnywhere, go to</p>
+<ul>
+<li><a href="https://appsanywhere.durham.ac.uk" class="uri">https://appsanywhere.durham.ac.uk</a></li>
+</ul>
+<p>This will direct you to a window asking you to enter your CIS username and password. Do this and then click the sign-in button below. You will be then directed to a new window where in the main area you will see several thumbnails, each of them corresponding to a different app.</p>
+<p>To launch Rstudio:</p>
+<ul>
+<li>In the search box to the top-right, type rstudio. This will filter the visible apps.</li>
+<li>Click the button ‘Launch Remote’ on the RStudio thumbnail. This will launch RStudio.</li>
+</ul>
+</div>
+</div>
+<div id="instructions-for-the-installation-of-software-for-statistics-modules" class="section level1" number="2">
+<h1 number="2"><span class="header-section-number">2</span> Instructions for the installation of software for Statistics modules</h1>
+<p>In this section, we explain how to install:</p>
+<ul>
+<li><p><strong>R</strong>: a programming language particularly adapted to statistical analysis;</p></li>
+<li><p><strong>RStudio</strong>: an IDE that facilitates the creation, debugging, and running of R programs;</p></li>
+</ul>
+<p>Please note that these instructions are provided for guidance only. We are not responsible for any issues that may arise due to the installation; if you have questions, please ask.</p>
+<div id="how-to-install-on-your-personal-computer" class="section level2" number="2.1">
+<h2 number="2.1"><span class="header-section-number">2.1</span> How to install on your personal computer</h2>
+<p>Most of the time, you will need to work in the RStudio environment, while in the background RStudio will run your code in R.</p>
+<div id="how-to-install-r" class="section level3" number="2.1.1">
+<h3 number="2.1.1"><span class="header-section-number">2.1.1</span> How to install R</h3>
+<p>R is a programming language suitable for statistical computing and graphics. Almost all modern statistics requires the use of computers in order to perform statistical procedures that cannot practically be performed by hand.</p>
+<ul>
+<li>Windows
+<ul>
+<li>Download R from <a href="https://cran.r-project.org/bin/windows/base/" class="uri">https://cran.r-project.org/bin/windows/base/</a> and follow instructions.</li>
+</ul></li>
+<li>Mac-OS
+<ul>
+<li>Download R from <a href="https://cran.r-project.org/bin/macosx/" class="uri">https://cran.r-project.org/bin/macosx/</a> and follow instructions.</li>
+</ul></li>
+<li>Linux
+<ul>
+<li>Go to <a href="https://cran.r-project.org/bin/linux/" class="uri">https://cran.r-project.org/bin/linux/</a> and follow the instructions appropriate for your version of Linux.</li>
+</ul></li>
+</ul>
+</div>
+<div id="how-to-install-rstudio" class="section level3" number="2.1.2">
+<h3 number="2.1.2"><span class="header-section-number">2.1.2</span> How to install RStudio</h3>
+<p>RStudio can be accessed from the links below. We will use the Free version of RStudio Desktop.</p>
+<ul>
+<li>Windows and MacOS
+<ul>
+<li>Download the installer from <a href="https://www.rstudio.com/products/rstudio/download/" class="uri">https://www.rstudio.com/products/rstudio/download/</a>, double-click the file, and follow instructions.</li>
+</ul></li>
+<li>Linux
+<ul>
+<li>Download the appropriate package from <a href="https://www.rstudio.com/products/rstudio/download/" class="uri">https://www.rstudio.com/products/rstudio/download/</a> and then execute the following commands, where <packagename> stands for the name of the package minus the filename extension (e.g. .deb).</li>
+<li>Debian: sudo dpkg –install <packagename>.deb</li>
+<li>Fedora: sudo rpm -i <packagename>.rpm</li>
+</ul></li>
+</ul>
+<p>You may also check out this video:</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/bVbCm_nE974" allowfullscreen>
+</iframe>
+</div>
+<div id="how-to-install-the-durham-r-package" class="section level3" number="2.1.3">
+<h3 number="2.1.3"><span class="header-section-number">2.1.3</span> How to install the ‘durham’ R package</h3>
+<p>For computer practicals on Statistics courses, you may need data sets and libraries from the R package called <code>durham</code>. The easiest way to download the package to your own computer is by making use of the <code>remotes</code> R package. Run the following commands in the RStudio console:</p>
+<pre class="r"><code>install.packages( &quot;remotes&quot;)
+remotes::install_github( &quot;louisaslett/durham-Rpkg&quot;)</code></pre>
+<p>If you get an error, or would like further information look here:</p>
+<p><a href="https://github.com/louisaslett/durham-Rpkg" class="uri">https://github.com/louisaslett/durham-Rpkg</a></p>
+</div>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.odd').parent('tbody').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- tabsets -->
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open');
+  });
+});
+</script>
+
+<!-- code folding -->
+
+<script>
+$(document).ready(function ()  {
+
+    // temporarily add toc-ignore selector to headers for the consistency with Pandoc
+    $('.unlisted.unnumbered').addClass('toc-ignore')
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_');
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
