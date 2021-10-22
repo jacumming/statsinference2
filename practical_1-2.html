@@ -443,24 +443,241 @@ div.tocify {
 </div>
 
 
-<!-- In this session we perform simple simulation exercises in order to investigate the properties of the sample mean introduced in the lectures. -->
-<!-- Today we will learn R techniques beyond those seen in the first year (if you were a Stats student), including the use of loops and writing your own functions.  -->
-<!--  *  [Download the R Script](scripts/practical_1-2.R) - Right click, and Save As -->
-<!-- ```{block2, type='goals'} -->
-<!--  *  You will need the following skills from previous practicals: -->
-<!--     *   Basic R skills with arithmetic, functions, etc -->
-<!--     *   Manipulating and creating vectors: `c`, `seq`,  -->
-<!--     *   Calculating data summaries: `mean`, `sd`, `var`, `min`, `max` -->
-<!--     *   Plotting a scatterplot with `plot`, and a histogram with `hist` -->
-<!--  *  New R techniques: -->
-<!--     *   Sampling with and without replacement from a vector using `sample` -->
-<!--     *   Creating new functions with `function` -->
-<!--     *   Creating traditional `for` loops to iterate calculations -->
-<!--     *   Using `sapply` to repeat calculations over a vector of values -->
-<!--     *   Using `par(mfrow=c(a,b))` to setup a grid of plots -->
-<!--     *   Adding straight lines to plots with `abline` -->
-<!-- ```  -->
-<!-- # Sampling without replacement {.first} -->
+<p>In this session we perform some simulation exercises in order to investigate the properties of the sample mean introduced in the lectures. We’ll expand our R techniques to see how to to write custom functions, and repeat calculations using loops and similar functions.</p>
+<ul>
+<li><a href="scripts/practical_1-2.R">Download the R Script</a> - Right click, and Save As</li>
+</ul>
+
+<div class="goals">
+<ul>
+<li>You will need the following skills from previous practicals:
+<ul>
+<li>Basic R skills with arithmetic, functions, etc</li>
+<li>Manipulating and creating vectors: <code>c</code>, <code>seq</code>,</li>
+<li>Calculating data summaries: <code>mean</code>, <code>sd</code>, <code>var</code>, <code>min</code>, <code>max</code></li>
+<li>Plotting a histogram with <code>hist</code></li>
+</ul></li>
+<li>New R techniques:
+<ul>
+<li>Sampling from a vector using <code>sample</code></li>
+<li>Generating random numbers from a binomial distribution using <code>rbinom</code></li>
+<li>Creating new functions with <code>function</code></li>
+<li>Using <code>replicate</code> to repeatedly call a functio with no arguments</li>
+<li>Adding straight lines to plots with <code>abline</code></li>
+</ul></li>
+</ul>
+</div>
+<div id="jury-selection-swain-vs.-alabama-1965" class="section level1 first" number="1">
+<h1 class="first" number="1"><span class="header-section-number">1</span> Jury selection: Swain vs. Alabama (1965)</h1>
+<p>The context of our problem today is concerns the selection of a jury in a trial in 1965 Alabama, USA. In the early 1960s, in Talladega County in Alabama, a Black man called Robert Swain was convicted and was sentenced to death. At the time, only men aged 21 or older were allowed to serve on juries in Talladega County, where 26% of the eligible jurors were Black. Of the 100 jurors available in the jury panel, only 8 were Black and no Black man was selected for the jury of the actual trial itself.</p>
+<p>Robert Swain appealed his sentence, citing among other factors the fact the jury at his trial was all White. Moreover, he pointed out that all Talladega County jury panels for the past 10 years had contained only a small percent of Black panelists. Robert Swain was represented in the U.S. Supreme Court by <a href="https://en.wikipedia.org/wiki/Constance_Baker_Motley">Constance Baker Motley</a>, the first African-American woman to argue a case in that Court. She argued 10 cases in the Supreme Court and lost only one – Robert Swain’s. The U.S. Supreme Court concluded, “the overall percentage disparity has been small” and that there was insufficient evidence of “invidious discrimination”.</p>
+<p>But was this assertion reasonable? If jury panelists were selected at random from the county’s eligible population, there would be some chance variation. We wouldn’t get exactly 26 Black panelists on every 100-person panel. But would we expect as few as eight? In this practical, we will use statistical simulation to investigate how plausible such an outcome would be, given the composition of the wider population of potential jurors.</p>
+</div>
+<div id="simulation-and-sampling" class="section level1" number="2">
+<h1 number="2"><span class="header-section-number">2</span> Simulation and sampling</h1>
+<p>Statistical simulation (or the <a href="https://en.wikipedia.org/wiki/Monte_Carlo_method">Monte Carlo method</a>) is a statistical technique where we artificially generate (“simulate”) data in order to explore sampling distributions, investigate the behaviour of statistical methods, and test hypotheses. These methods are particularly useful when the corresponding mathematical calculations are difficult or even impossible. Of course, since our results are a product of how we set up the simulation we must take particular care in setting up the problem and interpreting what we find.</p>
+<p>For this practical, we will use R and a bit of statistical thinking to examine the disparity between the 8 out of 100 Black men in the jury panel, the distribution of the actual jury, and the distribution in the population.</p>
+<div id="simulating-a-jury" class="section level2" number="2.1">
+<h2 number="2.1"><span class="header-section-number">2.1</span> Simulating a jury</h2>
+<p>We’re going to approach the problem as follows:</p>
+<ul>
+<li>Let <span class="math inline">\(X_i\)</span> be one of the <span class="math inline">\(n=100\)</span> potential jurors in the panel</li>
+<li>Then <span class="math inline">\(X_i=1\)</span> if that juror is Black and <span class="math inline">\(X_i=0\)</span> otherwise</li>
+<li>The jury panel comprises <span class="math inline">\(n=100\)</span> individuals are selected at random and representatitvely from the population.</li>
+<li>hus we assume that <span class="math inline">\(X_i\)</span> is drawn from a distribution where <span class="math inline">\(P[X_i=1]=0.26\)</span> to represent the 26% of eligible Black people in the local population.</li>
+<li><span class="math inline">\(10\)</span> people from the 100-person jury panel are then selected to be on the trial jury.</li>
+</ul>
+<p>Under these assumptions, we can <em>simulate</em> or <em>randomly generate</em> possible jury panels consistent with random selection from this population. If the panel were truly selected at random then our simulated results should be close to those observed in Swain’s case. If the results of our simulation are not consistent with the composition of the panel in the trial, that will be evidence against our model assumptions (ie the model of random selection) and potential evidence of bias.</p>
+<p>To begin with, we will simulate a jury using the <code>sample</code> function:</p>
+
+<div class="technique">
+<p>The <code>sample</code> function allows us to take a sample of a specified size from a vector of values which is treated as the population. The sample function has the following syntax, which you can find by typing <code>?sample</code>:</p>
+<p><code>sample(x, size, replace = FALSE, prob = NULL)</code></p>
+<p>The arguments to this function are:</p>
+<ul>
+<li><code>x</code> a vector of values representing the population to be sampled</li>
+<li><code>size</code> the size of sample to take - in our case this is <span class="math inline">\(n\)</span></li>
+<li><code>replace</code> - whether to sample with replacement (<code>TRUE</code>) or not (<code>FALSE</code>)</li>
+<li><code>prob</code> - a vector of probabilities for the selection of each element of <code>x</code>. If probabilities aren’t specified here, then the elements of <code>x</code> are assumed equally likely.</li>
+</ul>
+</div>
+
+<div class="question">
+<ul>
+<li>Use the <code>sample</code> function to:
+<ul>
+<li>Take a sample of size <span class="math inline">\(n=100\)</span></li>
+<li>From a population of <span class="math inline">\([0,1]\)</span> values</li>
+<li>With a probabilities <span class="math inline">\([0.74,0.26]\)</span></li>
+<li>Using replacement</li>
+</ul></li>
+<li><em>Hint:</em> last time we saw we can use the <code>c</code> function to create vectors from two or more constants.
+</div></li>
+</ul>
+<p>Your code should return a vector of length 100, that will look something like the one below.</p>
+<pre><code>##   [1] 0 0 0 0 0 0 0 0 1 1 0 0 0 0 1 0 0 1 1 0 0 0 1 0 0 0 1 0 0 0 0 0 0 0 1 1 0 0 0 0 0 0 0 1 0 0 0 1 1 0 0 0 0 1
+##  [55] 0 1 0 0 0 1 1 1 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 1 1 0 1 1 0 0 0 1 0 0 0</code></pre>
+
+<div class="question">
+<ul>
+<li>What do the values <span class="math inline">\(0\)</span> and <span class="math inline">\(1\)</span> represent?</li>
+<li>Re-run your code from the previous exercise, but now save it as a variable <code>x</code></li>
+<li>Compute the <code>sum</code> of the elements of <code>x</code> to find out how many Black jurors would be in your simulated jury pool.</li>
+<li>Are you close to the value of <span class="math inline">\(8\)</span> that was seen in the Swain case?</li>
+<li>How would you modify your code to compute the proportion of Black jurors in the panel?
+</div></li>
+</ul>
+</div>
+<div id="using-a-function-to-repeat-your-calculations" class="section level2" number="2.2">
+<h2 number="2.2"><span class="header-section-number">2.2</span> Using a function to repeat your calculations</h2>
+<p>As with other programming languages (such as Python), we can combine multiple commands in <code>R</code> into our own custom functions that perform more complicated tasks or calculations. Throughout the year, we will be writing our own functions to solve specific problems and today we will learn the basic syntax of how to create a function.</p>
+
+<div class="technique">
+<p>When creating a new function, it needs to have a name, probably at least one argument (although it doesn’t have to), and a body of code that does something. At the end it usually should (although doesn’t have to) return a value or object out of the function.</p>
+<p>The general syntax for writing your own function is</p>
+</div>
+<pre class="r"><code>name.of.function &lt;- function(arg1, arg2, arg3=2) {
+  # function code to do some useful stuff
+  return(something) # return value 
+}</code></pre>
+
+<div class="technique">
+<ul>
+<li><strong><code>name.of.function</code></strong>: is the function’s name. This can be any valid variable name, but you should avoid using names that are used elsewhere in R, such as <code>mean</code>, <code>function</code>, <code>plot</code>, etc.</li>
+<li><strong><code>arg1</code>, <code>arg2</code>, <code>arg3</code></strong>: these are the arguments of the function. You can write a function with any number of arguments, or none at all. Essentially, this is the list of everything that is needed for the <code>name.of.function</code> function to run. Some arguments have default values specified, such as <code>arg3</code> in our example, which is set to <code>2</code> unless otherwise specified. Arguments without a default must have a value supplied for the function to run. You do not need to provide a value for those arguments with a default as they are considered as optional, and when omitted the function will simply use the default value in its definition.</li>
+<li><strong>Function body</strong>: The function code between the within the <code>{}</code> brackets is run every time the function is called. Note that unlike Python where the code <em>inside</em> the function is <em>indented</em>, with <code>R</code> the code inside the function must be enclosed in curly braces <code>{}</code>.</li>
+<li><strong>Return value</strong>: The last line of the code is the value that will be returned by the function. It is not necessary that a function return anything, for example a function that makes a plot might not return anything (and so either state <code>return()</code> or omitting the <code>return</code> statement entirely), whereas a function that does a mathematical operation might return a number, or a vector.
+</div></li>
+</ul>
+<p>For example, we can write a function to compute the sum of squares of two numbers as</p>
+<pre class="r"><code>sum.of.squares &lt;- function(x,y) {
+  return(x^2 + y^2)
+}</code></pre>
+<p>and we can then evaluate</p>
+<pre class="r"><code>sum.of.squares(3,4)</code></pre>
+<pre><code>## [1] 25</code></pre>
+
+<div class="question">
+<ul>
+<li>Write a function called <code>simulatePanel</code> which has no arguments, simulates a 100 person jury panel, and returns the number of Black jurors it contains.
+</div></li>
+</ul>
+
+<div class="technique">
+<p><code>replicate</code> is a function that repeatedly executes a fragment of code (an <em>expression</em>) a certain number of times. The function and the number of times its called are its two arguments:</p>
+<p><code>replicate(n, expr)</code></p>
+<p>evaluates the code <code>expr</code> repeatedly <code>n</code> times. For example, the following line of code will print <code>"Hello World"</code> to the console ten times:</p>
+<p><code>replicate(10, print("Hello world"))</code></p>
+<p>If the expression <code>expr</code> returns a value, then <code>replicate</code> combines the results together and returns them as a single object.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>Use <code>replicate</code> with your <code>simulatePanel</code> function to simulate the number of Black jurors on 5000 simulated jury panels. Save the results to a variable called <code>panels</code>.</li>
+<li>What does each number in the vector <code>panels</code> represent?</li>
+<li>Draw a <code>hist</code>ogram of <code>panels</code> - how does this compare to the observation of <span class="math inline">\(x=8\)</span>?
+</div></li>
+</ul>
+<p><!-- * How would you modify your code to return the full composition of the panels (e.g. all the `0` and `1` values) instead of just the sum? --></p>
+</div>
+<div id="using-a-binomial-distribution" class="section level2" number="2.3">
+<h2 number="2.3"><span class="header-section-number">2.3</span> Using a binomial distribution</h2>
+<p>A different (and simpler) way of viewing this problem is to recognise that we have all of the conditions for a binomial distribution here. If we let the number of Black jurors on the 100-person panel be <span class="math inline">\(X\)</span>, then if we’re sampling independently and randomly with fixed <span class="math inline">\(p=0.26\)</span>, then we should have that <span class="math inline">\(X\sim\text{Bin}(100, 0.26)\)</span>.</p>
+<p>As you might expect from statistical software, R can directly generate random numbers from common distributions such as the binomial.</p>
+
+<div class="technique">
+<p>The <code>rbinom</code> function allows us to generate random observations from a binomial distribution. Its syntax is</p>
+<p><code>rbinom(n, size, prob)</code></p>
+<p>The arguments to this function are: * <code>n</code> - how many random numbers to generate. Note this is not the binomial sample size parameter <span class="math inline">\(n\)</span>! * <code>size</code> - the <span class="math inline">\(n\)</span> parameter of the binomial distribution to use * <code>prob</code> - the probability of success <span class="math inline">\(p\)</span>.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>How would you use the <code>rbinom</code> function to simulate <span class="math inline">\(X\)</span>, the number of Black jurors in a jury panel of 100 individuals?</li>
+<li>How would you modify your code to simulate 5000 values of <span class="math inline">\(X\)</span>?
+</div></li>
+</ul>
+</div>
+<div id="exploring-the-results" class="section level2" number="2.4">
+<h2 number="2.4"><span class="header-section-number">2.4</span> Exploring the results</h2>
+<p>We’ve now randomly simulated a large number of potential jury panels consistent with this area in Alabama. Let’s do a little statistical analysis on our results. You can use either the results from your own function or <code>rbinom</code> - it shouldn’t matter which.</p>
+
+<div class="question">
+<ul>
+<li>Compute the <code>mean</code> and <code>var</code>iance of your simulated <span class="math inline">\(X\)</span>s.</li>
+<li>Given <span class="math inline">\(X\)</span> should be binomial, do the mean and variance values agree with what you know of the theoretical mean and variance of binomial random variables?</li>
+<li>Does the simulated distribution of <span class="math inline">\(X\)</span> the values appear to be consistent with the observation <span class="math inline">\(x=8\)</span>?
+</div></li>
+</ul>
+
+<div class="question">
+<ul>
+<li>What distribution would make a good approximation to that of <span class="math inline">\(X\)</span>? Hint: we’re summing a large number of independent random variables.</li>
+<li>Re-draw/go back to your<code>hist</code>ogram of the values of <span class="math inline">\(X\)</span>. Does the shape of the histogram agree with your expectation?
+</div></li>
+</ul>
+Let’s add the observed value of <span class="math inline">\(x=8\)</span> for reference. To do this, we’ll need to modify our <span class="math inline">\(x\)</span>-axis to have a larger range so that 8 appears on the plot range, and learn how to add lines to an existing plot. 
+<div class="technique">
+<p>To control the ranges of the horizontal and vertical axes, we can add the <code>xlim</code> and <code>ylim</code> arguments to our original plotting command. To set the horixontal axis limits, we pass a vector of two numbers to represent the lower and upper limits, <code>xlim = c(lower, upper)</code>, and repeat the same for <code>ylim</code> to customise the vertical axis. For example,</p>
+<p><code>plot(x=1:10, y=1:10, xlim=c(-10,10), ylim=c(0,20))</code></p>
+<p>We don’t have to specify axis limits, and when omitted R will figure out something sensible for us.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>Re-draw your histogram using <span class="math inline">\(x\)</span> axis limits that go from <span class="math inline">\(0\)</span> up to <span class="math inline">\(50\)</span>.
+</div></li>
+</ul>
+
+<div class="technique">
+<p>It is often useful to add simple straight lines to lines to plots, which can be achieved using the <code>abline</code> function. <code>abline</code> can be used in three different ways:</p>
+<ul>
+<li>Draw a horizontal line: pass a value to the <code>h</code> argument, <code>abline(h=3)</code> draws a horizontal line at <span class="math inline">\(y=3\)</span></li>
+<li>Draw a vertical line: pass a value to the <code>v</code> argument, <code>abline(v=5)</code> draws a vertical line at <span class="math inline">\(x=5\)</span></li>
+<li>Draw a line with given intercept and slope: pass value to the <code>a</code> and <code>b</code> arguments representing the intercept and slope respectively; <code>abline(a=1,b=2)</code> draws the line at <span class="math inline">\(y=1+2x\)</span></li>
+</ul>
+<p><code>abline</code> can be customised using any of the usual colour and line modifications using colour <a href="r_8_advplots.html#col">(<code>col</code>)</a>, line types and widths <a href="r_8_advplots.html#lwd">(<code>lty</code>, and <code>lwd</code>)</a>.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>Add a vertical line at <span class="math inline">\(x=8\)</span> to represent the observation in the Swain jury selection case.</li>
+<li>You can also customise your axis labels to be more readable - see <a href="r_7_plots.html#plot">the help</a> for details.</li>
+<li>You can customise your line (and your histogram) using colour:</li>
+<li>Read the help page on <a href="r_8_advplots.html#col">using colour in plots</a> and experiment with redrawing your hisorgram and vertical line using some custom colour.</li>
+<li>What do you conclude about the plausibility of observing <span class="math inline">\(x=8\)</span> at random from this population?
+</div></li>
+</ul>
+<p>You should end up with a plot that looks a little like this: <img src="practical_1-2_files/figure-html/unnamed-chunk-32-1.png" width="672" /></p>
+
+<div class="question">
+<ul>
+<li>Without using the normal distribution, how would you use your simulations to estimate <span class="math inline">\(P[X\leq 8]\)</span>?</li>
+<li><em>Hints</em>:
+<ul>
+<li>Think about how you might determine how many of your simulated jury panels have 8 or fewer Black jurors?</li>
+<li>You can use the <code>&lt;=</code> operator to test every element of a vector.</li>
+<li><code>sum</code> will treat all the values of <code>TRUE</code> in a vector as <code>1</code> and <code>FALSE</code> as <code>0</code></li>
+<li>You may need to make many more simulations to get a non-zero estimate.</li>
+<li>Ask for help if you’re stuck!
+</div></li>
+</ul></li>
+</ul>
+<p>This is evidence that the model of random selection of the jurors in the panel is not consistent with the data from the panel. While it is possible that the panel could have been generated by chance, our simulation demonstrates that it is hugely unlikely.</p>
+<p>The reality of the trial panel is very much at odds with the model’s assumption of random selection from the eligible population. When the data and a model are inconsistent, then the model is hard to justify. After all, the data are real but the model is just a set of assumptions. When assumptions are at odds with reality, we must question those assumptions.</p>
+<p>Therefore the most reasonable conclusion is that the either the proportion of eligible Black jurors was far smaller than stated or the assumption of random selection is unjustified for this jury panel. As the proportion was not in doubt, the most reasonable conclusion is that the jury panel was not selected by random sampling from the population of eligible jurors. Notwithstanding the opinion of the Supreme Court, the difference between 26% and 8% is not so small as to be explained well by chance alone.</p>
+</div>
+</div>
+<div id="further-exercises" class="section level1" number="3">
+<h1 number="3"><span class="header-section-number">3</span> Further Exercises:</h1>
+
+<div class="question">
+<ul>
+<li>How would you use the techniques above to simulate the selection (without replacement) of 10 trial jurors from the 100-person jury panel? Do your results indicate whether it is plausible to obtain no Black jurors purely at random?</li>
+<li>Link up your two simulations! First simulate the selection of a representative 100-person panel using <code>rbinom</code>, and then use your simulated panel to <code>sample</code> a simulated trial jury. Revisit your analysis to see whether this affects your conclusions.
+</div></li>
+</ul>
+<!-- # Sampling without replacement  -->
 <!-- We'll be using the `hospital` data set from the `durham` library in our sampling experiments. So, before we begin you'll need to load the data: -->
 <!-- ```{block2, type='question'} -->
 <!--  * Refer to [the worksheet from last time](practical_1-1.html#DurhamLibrary) and either: -->
@@ -475,7 +692,7 @@ div.tocify {
 <!-- ``` -->
 <!-- Recall that our general approach to sampling is to sample without replacement, so we don't repeatedly observe the same individual from the population. We can use `R`'s `sample` function to take random samples from a specified population vector, and we can do so either with or without replacement. -->
 <!-- ```{block2, type='technique'} -->
-<!-- The `sample` function allows us to take a sample of a specified size from a vector of values which is treated as the population.  -->
+<!-- The `sample` function allows us to take a sample of a specified size from a vector of values which is treated as the population. -->
 <!-- If we have a population vector `pop` and we want to take a sample of size `n` without replacement, then we use the following command: -->
 <!-- `sample(pop, n)` -->
 <!-- If we want to sample _with_ replacement, then we can add the additional optional argument `replace=TRUE`. -->
@@ -497,25 +714,25 @@ div.tocify {
 <!-- ## so the values should be centred about mu but its difficult to say more with only a few points -->
 <!-- ``` -->
 <!-- We will be performing a repeated sampling experiment where we repeat the sampling many times to generate different samples each time. Then we can use the many samples to produce many different sample means, which we can explore to check their behaviour against what we would expect from the theory seen in lectures. -->
-<!-- # Functions and loops  -->
+<!-- # Functions and loops -->
 <!-- To simplify the repeated sampling calculation, we will use a loop to repeat the calculations and we will write our own function to take care of the calculations we wish to perform during each iteration. -->
-<!-- ## Functions  -->
+<!-- ## Functions -->
 <!-- As with other programming languages (such as Python), we can combine multiple commands in `R` into our own custom functions that perform more complicated tasks or calculations. Throughout the year, we will be writing our own functions to solve specific problems and today we will learn the basic syntax of how to create a function. -->
 <!-- ```{block2, type='technique'} -->
-<!-- When creating a new function, it needs to have a name, probably at least one argument (although it doesn’t have to), and a body of code that does something. At the end it usually should (although doesn’t have to) return a value or object out of the function.  -->
+<!-- When creating a new function, it needs to have a name, probably at least one argument (although it doesn’t have to), and a body of code that does something. At the end it usually should (although doesn’t have to) return a value or object out of the function. -->
 <!-- The general syntax for writing your own function is -->
 <!-- ``` -->
 <!-- ```{r, eval=FALSE} -->
 <!-- name.of.function <- function(arg1, arg2, arg3=2) { -->
 <!--   # function code to do some useful stuff -->
-<!--   return(something) # return value  -->
+<!--   return(something) # return value -->
 <!-- } -->
 <!-- ``` -->
 <!-- ```{block2, type='technique'} -->
 <!--  + **`name.of.function`**: is the function’s name. This can be any valid variable name, but you should avoid using names that are used elsewhere in R, such as `mean`, `function`, `plot`, etc. -->
 <!--  + **`arg1`, `arg2`, `arg3`**: these are the arguments of the function. You can write a function with any number of arguments, or none at all. These can be any _R_ object: numbers, strings, arrays, data frames, or even other functions. Essentially, this is the list of everything that is needed for the `name.of.function` function to run. -->
 <!-- Some arguments have default values specified, such as `arg3` in our example, which is set to `2` unless otherwise specified. Arguments without a default must have a value supplied for the function to run. You do not need to provide a value for those arguments with a default as they are considered as optional, and when omitted the function will simply use the default value in its definition. -->
-<!--  + **Function body**: The function code between the within the `{}` brackets is run every time the function is called. Note that unlike Python where the code _inside_ the function is _indented_, with `R` the code inside the function must be enclosed in curly braces `{}`. This code might be very long or very short. Ideally functions are short and do just one thing – problems are rarely too small to benefit from some abstraction. Sometimes a large function is unavoidable, but usually these can be in turn constructed from a number of small functions.  -->
+<!--  + **Function body**: The function code between the within the `{}` brackets is run every time the function is called. Note that unlike Python where the code _inside_ the function is _indented_, with `R` the code inside the function must be enclosed in curly braces `{}`. This code might be very long or very short. Ideally functions are short and do just one thing – problems are rarely too small to benefit from some abstraction. Sometimes a large function is unavoidable, but usually these can be in turn constructed from a number of small functions. -->
 <!--  + **Return value**: The last line of the code is the value that will be returned by the function.  It is not necessary that a function return anything, for example a function that makes a plot might not return anything (and so either state `return()` or omitting the `return` statement entirely), whereas a function that does a mathematical operation might return a number, or a vector. -->
 <!-- ``` -->
 <!-- For example, we can write a function to compute the sum of squares of two numbers as -->
@@ -546,14 +763,14 @@ div.tocify {
 <!-- #MyFunPlotter(0:100) -->
 <!-- ``` -->
 <!-- ## Simple Loops -->
-<!-- A "loop"" is a way to repeat a sequence of instructions under certain conditions. They allow you to automate parts of your code that are in need of repetition. We will look at two ways of creating loops in our code:  -->
+<!-- A "loop"" is a way to repeat a sequence of instructions under certain conditions. They allow you to automate parts of your code that are in need of repetition. We will look at two ways of creating loops in our code: -->
 <!--    * Traditional loops which execute for a prescribed number of times, as controlled by a counter or an index, incremented at each iteration cycle are represented as `for` loops in _R_. You will probably have seen these before with Python. -->
 <!--    * Loops that take a function and apply that function to every element of a vector (or other array) are represented by the various `apply` functions in _R_. -->
 <!-- ```{block2, type='technique'} -->
 <!-- In _R_ a `for` loop takes the following general form: -->
 <!-- ``` -->
 <!-- ```{r,eval=FALSE} -->
-<!-- for (variable in sequence) {  -->
+<!-- for (variable in sequence) { -->
 <!--   ## code to repeat goes here -->
 <!-- } -->
 <!-- ``` -->
@@ -567,7 +784,7 @@ div.tocify {
 <!-- } -->
 <!-- ``` -->
 <!-- ```{block2, type='question'} -->
-<!--    * Sometimes big loops aren't necessary! Write a single line of code that computes the square root of the integers $1$ to $10$ without using `for`.  -->
+<!--    * Sometimes big loops aren't necessary! Write a single line of code that computes the square root of the integers $1$ to $10$ without using `for`. -->
 <!--    * Use a `for` loop to: -->
 <!--       * Print the values of the integers $1$ to $5$. -->
 <!--       * Print the squares of the integers from $10$ to $3$. -->
@@ -585,7 +802,7 @@ div.tocify {
 <!--   print("My Name") -->
 <!-- } -->
 <!-- ``` -->
-<!-- While `for` loops are helpful when we need to explictly repeat a block of code, sometimes we just want to apply the same function (or calculations) to all of the elements of a vector. We can use `for` to do this, but _R_ provides a function which does exactly that - `sapply`.  -->
+<!-- While `for` loops are helpful when we need to explictly repeat a block of code, sometimes we just want to apply the same function (or calculations) to all of the elements of a vector. We can use `for` to do this, but _R_ provides a function which does exactly that - `sapply`. -->
 <!-- ```{block2, type='technique'} -->
 <!-- `sapply` applies a specified function to every element of a vector and returns a vector formed from the results. -->
 <!-- `sapply(X, FUN)` -->
@@ -593,7 +810,7 @@ div.tocify {
 <!-- `sapply(1:10, FUN=sqrt)` -->
 <!-- or alternatively -->
 <!-- `sapply(1:10, FUN=function(i){sqrt(i)})` -->
-<!-- which applies the square root function to each of the integers 1 to 10. Unlike a loop, `sapply` automatically returns its results as a vector without us having to write code for that (our `for` loop above only printed the values).  -->
+<!-- which applies the square root function to each of the integers 1 to 10. Unlike a loop, `sapply` automatically returns its results as a vector without us having to write code for that (our `for` loop above only printed the values). -->
 <!-- There are other variations of `apply` which work with matrices and other data structures, and we will see those later. -->
 <!-- ``` -->
 <!-- If we combine this technique of looping with the ability to write our own functions, then we have a very flexible way of re-writing a standard loop in a vectorised way. In general, using the `sapply` function is to be preferred to a `for` loop particularly when we want to keep the results of the calculations from each iteration. However, `for` loops are still useful and more natural in certain cases (where we do not want the output values, or where each iteration has a dependency on the calculations at the previous step). -->
@@ -611,7 +828,7 @@ div.tocify {
 <!-- # The Sampling Experiment -->
 <!-- ```{block2, type='question'} -->
 <!--    * Make a vector of the means of 30 different samples of size 4 from the hospital discharges vector using a combination of `sapply` and the functions `sample` and `mean`. -->
-<!--    * Create a new function with argument `n` that returns a vector of the means of 1000 samples, each of size `n`, from the discharges data.  -->
+<!--    * Create a new function with argument `n` that returns a vector of the means of 1000 samples, each of size `n`, from the discharges data. -->
 <!--    _Hint:_ This is a one line function that places a version of the command used in the previous question within the function. -->
 <!--    * Using your new function, create three vectors containing the means for 1000 samples of sizes $n_1=4$, $n_2=16$ and $n_3=64$ from the discharges data (giving each a name). -->
 <!-- ``` -->
@@ -688,7 +905,7 @@ div.tocify {
 <!-- We can use `R` to investigate the properties of the distribution of the sample mean more closely. The theory tells us that the variance of the sample mean, $\bar{X}$, for a sample of size $n$ from a _finite_ population of size $N$ is given by: -->
 <!-- $$ -->
 <!-- \text{Var}[\bar{X}] = \sigma^2_{\bar{X}} = \left(\frac{N-n}{N-1}\right)\frac{\sigma^2}{n}, -->
-<!-- $$  -->
+<!-- $$ -->
 <!-- where $\sigma^2$ is the population variance of the original data, $X_i$. An unbiased estimator of this standard error is the estimated standard error, given by -->
 <!-- $$ -->
 <!-- S^2_{\bar{X}} = \left(1-\frac{n}{N}\right)\frac{s^2}{n}, -->
@@ -696,17 +913,17 @@ div.tocify {
 <!-- where $s^2$ is the sample variance. -->
 <!-- ```{block2, type='question'} -->
 <!--    * Calculate the true variance of the sample mean, $\sigma^2_{\bar{X}}$ for the samples of size 4, 16 and 64. -->
-<!--    * Write a new function with argument `n` that returns a vector of 1000 realisations of $S^2_{\bar{X}}$ for samples of `n` from the discharges data.  -->
+<!--    * Write a new function with argument `n` that returns a vector of 1000 realisations of $S^2_{\bar{X}}$ for samples of `n` from the discharges data. -->
 <!--    * Evaluate your function for $n=4$, $n=16$, and $n=64$ and store the result to three variables. -->
 <!--    * Display each of these three samples as histograms, one on top of the other in the same plot. Make sure the horizontal axes are the same. -->
 <!--    * Draw a vertical line on each one showing the location of the true variance of the sample mean in each case. -->
 <!--    * Is the result of this experiment consistent with the theory? Why? -->
 <!-- ``` -->
 <!-- ```{r, echo=FALSE, results="hide", fig.show="hide"} -->
-<!-- ## Careful with this step, as using `var` on the discharges vector uses the sample variance formula which  -->
-<!-- ## assumes the sample mean is not mu and which divides by (c-1). We need the population variance as  -->
+<!-- ## Careful with this step, as using `var` on the discharges vector uses the sample variance formula which -->
+<!-- ## assumes the sample mean is not mu and which divides by (c-1). We need the population variance as -->
 <!-- ## mean(disch)=mu since this is our population, and we want to divide by N. So either we need to correct the -->
-<!-- ## output from var or compute directly.  -->
+<!-- ## output from var or compute directly. -->
 <!-- N <- length(disch) -->
 <!-- sigma2 <- sum((disch-mean(disch))^2)/N -->
 <!-- ## or -->
@@ -737,6 +954,7 @@ div.tocify {
 <!-- hist(vars64, xlim=range(vars4)) -->
 <!-- abline(v=trueV64,col='red') -->
 <!-- ``` -->
+</div>
 
 
 
