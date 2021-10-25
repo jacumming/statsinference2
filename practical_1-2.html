@@ -316,7 +316,7 @@ div.tocify {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -443,7 +443,7 @@ div.tocify {
 </div>
 
 
-<p>In this session we perform some simulation exercises in order to investigate the properties of the sample mean introduced in the lectures. We’ll expand our R techniques to see how to to write custom functions, and repeat calculations using loops and similar functions.</p>
+<p>In this practical, we introduce the ideas of statistical simulation as a mechanism to investigate the behaviour of sampling distributions in a case study problem of jury selection. We’ll expand our R techniques to see how to write custom functions, to sample and generate random numbers, and how to repeat straightforward calculations an arbitrary number of times.</p>
 <ul>
 <li><a href="scripts/practical_1-2.R">Download the R Script</a> - Right click, and Save As</li>
 </ul>
@@ -462,7 +462,7 @@ div.tocify {
 <li>Sampling from a vector using <code>sample</code></li>
 <li>Generating random numbers from a binomial distribution using <code>rbinom</code></li>
 <li>Creating new functions with <code>function</code></li>
-<li>Using <code>replicate</code> to repeatedly call a functio with no arguments</li>
+<li>Using <code>replicate</code> to repeatedly call a function with no arguments</li>
 <li>Adding straight lines to plots with <code>abline</code></li>
 </ul></li>
 </ul>
@@ -484,7 +484,7 @@ div.tocify {
 <li>Let <span class="math inline">\(X_i\)</span> be one of the <span class="math inline">\(n=100\)</span> potential jurors in the panel</li>
 <li>Then <span class="math inline">\(X_i=1\)</span> if that juror is Black and <span class="math inline">\(X_i=0\)</span> otherwise</li>
 <li>The jury panel comprises <span class="math inline">\(n=100\)</span> individuals are selected at random and representatitvely from the population.</li>
-<li>hus we assume that <span class="math inline">\(X_i\)</span> is drawn from a distribution where <span class="math inline">\(P[X_i=1]=0.26\)</span> to represent the 26% of eligible Black people in the local population.</li>
+<li>Thus we assume that <span class="math inline">\(X_i\)</span> is drawn from a distribution where <span class="math inline">\(P[X_i=1]=0.26\)</span> to represent the 26% of eligible Black people in the local population.</li>
 <li><span class="math inline">\(10\)</span> people from the 100-person jury panel are then selected to be on the trial jury.</li>
 </ul>
 <p>Under these assumptions, we can <em>simulate</em> or <em>randomly generate</em> possible jury panels consistent with random selection from this population. If the panel were truly selected at random then our simulated results should be close to those observed in Swain’s case. If the results of our simulation are not consistent with the composition of the panel in the trial, that will be evidence against our model assumptions (ie the model of random selection) and potential evidence of bias.</p>
@@ -500,6 +500,7 @@ div.tocify {
 <li><code>replace</code> - whether to sample with replacement (<code>TRUE</code>) or not (<code>FALSE</code>)</li>
 <li><code>prob</code> - a vector of probabilities for the selection of each element of <code>x</code>. If probabilities aren’t specified here, then the elements of <code>x</code> are assumed equally likely.</li>
 </ul>
+Note that the arguments <code>replace</code> and <code>prob</code> are given default values of <code>FALSE</code> and <code>NULL</code>. This means that if we don’t specify a value, R will assume they take the defaults specified in the function definition.
 </div>
 
 <div class="question">
@@ -545,7 +546,7 @@ div.tocify {
 <ul>
 <li><strong><code>name.of.function</code></strong>: is the function’s name. This can be any valid variable name, but you should avoid using names that are used elsewhere in R, such as <code>mean</code>, <code>function</code>, <code>plot</code>, etc.</li>
 <li><strong><code>arg1</code>, <code>arg2</code>, <code>arg3</code></strong>: these are the arguments of the function. You can write a function with any number of arguments, or none at all. Essentially, this is the list of everything that is needed for the <code>name.of.function</code> function to run. Some arguments have default values specified, such as <code>arg3</code> in our example, which is set to <code>2</code> unless otherwise specified. Arguments without a default must have a value supplied for the function to run. You do not need to provide a value for those arguments with a default as they are considered as optional, and when omitted the function will simply use the default value in its definition.</li>
-<li><strong>Function body</strong>: The function code between the within the <code>{}</code> brackets is run every time the function is called. Note that unlike Python where the code <em>inside</em> the function is <em>indented</em>, with <code>R</code> the code inside the function must be enclosed in curly braces <code>{}</code>.</li>
+<li><strong>Function body</strong>: The function code between the <code>{}</code> brackets is run every time the function is called. Note that unlike Python where the code <em>inside</em> the function is <em>indented</em>, with <code>R</code> the code inside the function must be enclosed in curly braces <code>{}</code>.</li>
 <li><strong>Return value</strong>: The last line of the code is the value that will be returned by the function. It is not necessary that a function return anything, for example a function that makes a plot might not return anything (and so either state <code>return()</code> or omitting the <code>return</code> statement entirely), whereas a function that does a mathematical operation might return a number, or a vector.
 </div></li>
 </ul>
@@ -588,7 +589,12 @@ div.tocify {
 <div class="technique">
 <p>The <code>rbinom</code> function allows us to generate random observations from a binomial distribution. Its syntax is</p>
 <p><code>rbinom(n, size, prob)</code></p>
-<p>The arguments to this function are: * <code>n</code> - how many random numbers to generate. Note this is not the binomial sample size parameter <span class="math inline">\(n\)</span>! * <code>size</code> - the <span class="math inline">\(n\)</span> parameter of the binomial distribution to use * <code>prob</code> - the probability of success <span class="math inline">\(p\)</span>.</p>
+<p>The arguments to this function are:</p>
+<ul>
+<li><code>n</code> - how many random numbers to generate. Note this is not the binomial sample size parameter <span class="math inline">\(n\)</span>!</li>
+<li><code>size</code> - the <span class="math inline">\(n\)</span> parameter of the binomial distribution to use</li>
+<li><code>prob</code> - the probability of success <span class="math inline">\(p\)</span>.</li>
+</ul>
 </div>
 
 <div class="question">
@@ -605,7 +611,7 @@ div.tocify {
 <div class="question">
 <ul>
 <li>Compute the <code>mean</code> and <code>var</code>iance of your simulated <span class="math inline">\(X\)</span>s.</li>
-<li>Given <span class="math inline">\(X\)</span> should be binomial, do the mean and variance values agree with what you know of the theoretical mean and variance of binomial random variables?</li>
+<li>If <span class="math inline">\(X\sim Bin(100,0.26)\)</span> what are the theoretical mean and variance of <span class="math inline">\(X\)</span>? Do these values agree with your simulations?</li>
 <li>Does the simulated distribution of <span class="math inline">\(X\)</span> the values appear to be consistent with the observation <span class="math inline">\(x=8\)</span>?
 </div></li>
 </ul>
@@ -616,11 +622,11 @@ div.tocify {
 <li>Re-draw/go back to your<code>hist</code>ogram of the values of <span class="math inline">\(X\)</span>. Does the shape of the histogram agree with your expectation?
 </div></li>
 </ul>
-Let’s add the observed value of <span class="math inline">\(x=8\)</span> for reference. To do this, we’ll need to modify our <span class="math inline">\(x\)</span>-axis to have a larger range so that 8 appears on the plot range, and learn how to add lines to an existing plot. 
+Let’s add the observed value of <span class="math inline">\(x=8\)</span> for reference. To do this, we will likely need to modify our <span class="math inline">\(x\)</span>-axis to have a larger range to ensure that 8 is visible within the plot range, and learn how to add lines to an existing plot. 
 <div class="technique">
 <p>To control the ranges of the horizontal and vertical axes, we can add the <code>xlim</code> and <code>ylim</code> arguments to our original plotting command. To set the horixontal axis limits, we pass a vector of two numbers to represent the lower and upper limits, <code>xlim = c(lower, upper)</code>, and repeat the same for <code>ylim</code> to customise the vertical axis. For example,</p>
 <p><code>plot(x=1:10, y=1:10, xlim=c(-10,10), ylim=c(0,20))</code></p>
-<p>We don’t have to specify axis limits, and when omitted R will figure out something sensible  for us.</p>
+<p>We don’t have to specify axis limits, and when omitted R will figure out something sensible for us.</p>
 </div>
 
 <div class="question">
@@ -674,7 +680,7 @@ Let’s add the observed value of <span class="math inline">\(x=8\)</span> for r
 <div class="question">
 <ul>
 <li>How would you use the techniques above to simulate the selection (without replacement) of 10 trial jurors from the 100-person jury panel? Do your results indicate whether it is plausible to obtain no Black jurors purely at random?</li>
-<li>Link up your two simulations! First simulate the selection of a representative 100-person panel using <code>rbinom</code>, and then use your simulated panel to <code>sample</code> a simulated trial jury. Revisit your analysis to see whether this affects your conclusions.
+<li>Link up your two simulations! First simulate the selection of a representative 100-person panel using <code>rbinom</code>, and then use your simulated panel to <code>sample</code> a simulated trial jury without replacement. Revisit your analysis to see whether this affects your conclusions.
 </div></li>
 </ul>
 <!-- # Sampling without replacement  -->
