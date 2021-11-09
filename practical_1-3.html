@@ -37,6 +37,8 @@
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -316,7 +318,7 @@ div.tocify {
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -443,214 +445,336 @@ div.tocify {
 </div>
 
 
-<!-- We have seen in lectures that the MLEs for the parameters of several common distributions can be found in closed form. However, in general, the problem is not guaranteed to be so easy with a simple closed-form result. Therefore, in these situations, we will have to find and maximise the likelihood numerically. -->
-<!-- For this practical, we will focus on the Poisson distribution, which is particularly appropriate for counts of events occuring randomly in time or space. Suppose we have a simple problem with one piece of data, $X$, and we know that $X\sim\text{Po}(\lambda)$ for some unknown parameter value $\lambda$.  -->
-<!--    *  [Download the R Script](scripts/practical_1-4.R) - Right click, and Save As -->
-<!-- ```{block2, type='goals'} -->
-<!--  *  You will need the following skills from previous practicals: -->
-<!--     *   Basic R skills with arithmetic, functions, etc -->
-<!--     *   Manipulating and creating vectors: `c`, `seq`, -->
-<!--     *   Calculating data summaries: `mean`, `sum`, `length` -->
-<!--     *   Plotting with `plot` and `hist`, and adding lines to plots with `lines` and `abline` -->
-<!--     *   Repeatedly applying a function to a vector using `sapply` -->
-<!--  *  New R techniques: -->
-<!--     *   Optimising a function with `optim` -->
-<!--     *   Extracting named elements of a list using the `$` operator -->
-<!-- ``` -->
-<!-- # The Poisson Likelihood -->
-<!-- Our likelihood calculations begin with writing down the likelihood function of our data. For a single observation $X=x$ from a Poisson distribution, the likelihood is the the probability of observing $X=x$ written as a function of the parameter $\lambda$: -->
-<!-- \[ -->
-<!-- \ell(\lambda) = \mathbb{P}[X=x~|~\lambda] = \frac{e^{-\lambda}\lambda^x}{x!}. -->
-<!-- \] -->
-<!-- To begin with, suppose we observe a count of $X=5$. -->
-<!-- ```{block2, type='question'} -->
-<!--    * Write a simple function called `poisson` that takes arguments `lambda` which evaluates the Poisson probability $\mathbb{P}[X=5~|~\lambda]$. -->
-<!--      _Hint_: You will need the `exp` and `factorial` functions. -->
-<!--    * Evaluate the Poisson probability for $X=5$ when $\lambda=7$ - you should get a value of `0.1277167`. -->
-<!-- ``` -->
-<!-- ```{r eval=TRUE, echo=FALSE, results='hide'} -->
-<!-- 'poisson' <- function(lambda){ -->
-<!--   p <- exp(-lambda)*lambda^5/factorial(5) -->
-<!-- } -->
-<!-- poisson(7) -->
-<!-- ``` -->
-<!-- What we have just created is the likelihood function, $\ell(\lambda)$, for the Poisson parameter $\lambda$ given a single observation of $X=5$.  -->
-<!-- Before we consider a larger data problem, let's briefly explore this simplest case of a Poisson likelihood. -->
-<!-- ```{block2, type='question'} -->
-<!--    * Create a `seq`uence of `length` 200 from `0.1` to `20`. Save this as `lambdavals`.  -->
-<!--    * Use `sapply` to evaluate the Poisson likelihood function for every value of $\lambda$ in `lambdavals`. Save this as `like5`. -->
-<!--    * Draw a `plot` of the Poisson likelihood as a function of lambda. Use `ty='l'` to draw a line graph. -->
-<!--    * By eye, what is the value $\hat{\lambda}$ of $\lambda$ which maximises the likelihood? -->
-<!-- ``` -->
-<!-- ```{r eval=TRUE, echo=FALSE, results='hide', fig.show='asis'} -->
-<!-- lambdavals <- seq(0.1,20,length=200) -->
-<!-- like5 <- sapply(lambdavals, poisson) -->
-<!-- plot(x=lambdavals, y=like5, ty='l',ylab='Likelihood', xlab=expression(lambda)) -->
-<!-- ``` -->
-<!-- Typically, we usually work with the log-likelihood $\mathcal{L}(\lambda)=\log\ell(\lambda)$, rather than the likelihood itself. This can often make the mathematical maximisation simpler, the numerical computations more stable, and it is also intrinsically connected to the idea of *information* (which we will consider later). -->
-<!-- ```{block2, type='question'} -->
-<!--    * Modify your `poisson` function to compute the logarithm of the Poisson probability, and call this `logPoisson`. You will need to use the `log` function. -->
-<!--    * Evaluate the log likelihood function for all $\lambda$ in `lambdavals` and plot the log-likelihood against $\lambda$. Do you find the same maximum value $\widehat{\lambda}$? -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- 'logPoisson' <- function(lambda){ -->
-<!--   ## lazy way -->
-<!--   #p <- log(exp(-lambda)*lambda^5/factorial(5)) -->
-<!--   ## smarter way -->
-<!--   p <- -lambda+5*log(lambda)-log(factorial(5)) -->
-<!--   return(p) -->
-<!-- } -->
-<!-- ll5 <- sapply(lambdavals, logPoisson) -->
-<!-- plot(x=lambdavals, y=ll5, ty='l') -->
-<!-- ``` -->
-<!-- # Likelihood methods for real data -->
-<!-- The Poisson distribution has been used by traffic engineers as a model for light traffic. This assumption is based on the rationale that if the rate is approximately constant and the traffic is light (so the individual cars move independently of each other), then the distribution of counts of cars in a given time interval or space area should be nearly Poisson (Gerlough and Schuhl 1955).  -->
-<!-- The following table shows the number of right turns during 300 3-minute intervals at a specific junction. -->
-<!-- ```{r echo=FALSE, results='asis'} -->
-<!-- n <- 0:12 -->
-<!-- freq <- c(14,30,36,68,43,43,30,14,10,6,4,1,1) -->
-<!-- D <- t(data.frame("N"=n,"Frequency"=freq)) -->
-<!-- library(knitr) -->
-<!-- library(kableExtra) -->
-<!-- kable(D,"html") %>% -->
-<!--   kable_styling(bootstrap_options = c("striped")) %>% -->
-<!--   column_spec(1, bold = TRUE) -->
-<!-- ``` -->
-<!-- ```{r eval=TRUE, echo=TRUE, results='hide'} -->
-<!-- traffic <- rep(0:12, c(14,30,36,68,43,43,30,14,10,6,4,1,1)) -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!--    * Evaluate the piece of code above to create the vector `traffic` corresponding to the above data set. -->
-<!--    * Plot a `hist`ogram of the data. Does an assumption of a Poisson distribution appear reasonable? -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- hist(traffic) -->
-<!-- ``` -->
-<!-- If we suppose a Poisson distribution might be a good choice of distribution for this dataset, we still need to find out which particular Poisson distribution is best by estimating the parameter $\lambda$.  -->
-<!-- Let's begin by constructing the likelihood and log-likelihood functions for this data set of 300 observations. Assuming that the observations $x_1, \dots, x_{300}$ can be treated as 300 i.i.d. values from $\text{Po}(\lambda)$, the log-likelihood function for the entire sample is: -->
-<!-- \[ -->
-<!-- \mathcal{L}(\lambda) = -n\lambda +\left(\sum_{i=1}^n x_i \right) \log \lambda, -->
-<!-- \] -->
-<!-- up to an additive constant from the factorial terms (which we can ignore). -->
-<!-- ```{block2, type='question'} -->
-<!--    * Write a new functions `logLike` with a single parameter `lambda`, which evaluates the log-likelihood expression above for the `traffic` data and the supplied values of `lambda`. -->
-<!--     _Hint_: Use `length` and `sum` to compute the summary statistics. -->
-<!--    * Evaluate the data log-likelihood for all $\lambda$ in `lambdavals` and plot the log-likelihood against $\lambda$. Without further calculations, use the plot to have a guess at the maximum likelihood estimate $\widehat{\lambda}$ -- we'll check this later! -->
-<!-- ``` -->
-<!-- ```{r eval=TRUE, echo=FALSE, results='hide', fig.show='asis'} -->
-<!-- 'logLike' <- function(lambda){ -->
-<!--   n <- length(traffic) -->
-<!--   s <- sum(traffic) -->
-<!--   ll <- -n*lambda + s*log(lambda)  -->
-<!--   return(ll) -->
-<!-- } -->
-<!-- ll <- sapply(lambdavals, logLike) -->
-<!-- plot(x=lambdavals, y=ll, ty='l',xlab=expression(lambda),ylab='log likelihood') -->
-<!-- ``` -->
-<!-- ## Maximising the likelihood -->
-<!-- The *maximum likelihood estimate (MLE)* $\widehat{\lambda}$ for the $\lambda$ parameter of the Poisson distribution is the value of $\lambda$ which maximises the likelihood -->
-<!-- \[ -->
-<!-- \widehat{\lambda}=\operatorname{argmax}_{\lambda\in\Omega} \ell(\lambda)= \operatorname{argmax}_{\lambda\in\Omega} \mathcal{L}(\lambda). -->
-<!-- \] -->
-<!-- Therefore to find the MLE, we must maximise $\ell$ or $\mathcal{L}$. We know we can do this analytically for certain common distributions, but in general we'll have to optimise the function numerically instead. For such problems, `R` provides various functions to perform a numerical optimisation of a give function (even one we define ourself). The function we will focus on is `optim`: -->
-<!-- ```{block2, type='technique'} -->
-<!-- `R` offers several optimisation functions, however the one we shall be using today is `optim` which is one of the most general optimisation functions. This generality comes at the price of having a lot of optional parameters that need to be specified. -->
-<!-- For our purposes, we're doing a 1-dimensional optimisation of a given function named `logLike`. So the syntax we will use to maximise this function is as follows -->
-<!-- `optim(start, logLike, lower=lwr, upper=upr, method='Brent', control=list(fnscale=-1))` -->
-<!-- The arguments are: -->
-<!--    * `start` : an initial value for $\lambda$ at which to start the optimisation. *Replace this with a sensible value.* -->
-<!--    * `logLike` : this is the function we're optimising. In general, we can replace this with any other function. -->
-<!--    * `lower=lwr, upper=upr` : lower and upper bounds to our search for $\widehat{\lambda}$. *Replace `lwr` and `upr`  with appropriate numerical values*; an obvious choice for this problem is the min and max of our data. -->
-<!--    * `method='Brent'` : this selects an appropriate optimisation algorithm for a 1-D optimisation. -->
-<!--    * `control=list(fnscale=-1)` : this looks rather strange, but is simply telling `optim` to *max*imise the given function, rather than *min*imise (which is the default). -->
-<!-- `optim` returns a number of values in the form of a list. The relevant components are: -->
-<!--    * `par` : the optimal value of the parameter -->
-<!--    * `value` : the optimum of the function being optimised. -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!--    * Use `optim` to maximise the `logLike` function. You should choose an appropriate initial value for $\lambda$, as well as sensible `upper` and `lower` bounds. -->
-<!--    * What value of $\widehat{\lambda}$ do you obtain? How does this compare to your guess at the MLE? -->
-<!--    * We know from lectures that the $\widehat{\lambda}=\bar{X}$ -- evaluate the sample mean of the `traffic` data. Does this agree with your results from directly maximising the log-likelihood? -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- ret <- optim(1, logLike, lower=0, upper=12, method='Brent', control=list(fnscale=-1)) -->
-<!-- ``` -->
-<!-- ```{block2, type='technique'} -->
-<!-- The output of `optim` is in the form of a `list`. Unlike vectors, `list`s can combine many different variables together (numbers, strings, matrices, etc) and each element of a list can be given a name to make it easier to access. -->
-<!-- For example, we can create our own lists using the `list` function: -->
-<!-- ` test <- list(Name='Donald', IQ=-10, Vegetable='Potato')` -->
-<!-- Once created, we can access the named elements of the list using the `$` operator. For example, -->
-<!-- ` test$IQ` -->
-<!-- will return the value saved to `IQ` in the list, i.e. `-10`. RStudio will show auto-complete suggestions for the elements of the list after you press `$`, which can help make life easier. -->
-<!-- We can use this to extract the MLE value from `optim` by first saving the results to a variable, called `results` say, and then extracting the list element named `par`. -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!--    * Extract the optimal value of $\lambda$ from the output of `optim` and save it to a new variable called `mle`. -->
-<!--    * Re-draw your plot of the log-likelihood function, and use `abline` to: -->
-<!--       * Add a red solid vertical line at $\lambda=\widehat{\lambda}$ -->
-<!--       * Add a blue dashed vertical line at $\lambda=\bar{x}$. -->
-<!--    * Do the results agree with each other, and with your guess at $\widehat{\lambda}$? -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- mle <- ret$par -->
-<!-- plot(x=lambdavals, y=ll,ty='l') -->
-<!-- abline(v=mle,col='red') -->
-<!-- abline(v=mean(traffic), col='blue', lty=2) -->
-<!-- ``` -->
-<!-- Let's return to the original distribution of the data. The results of our log-likelihood analysis suggest that a Poisson distribution with parameter $\widehat{\lambda}$ is the best choice of Poisson distributions for this data set. -->
-<!-- ```{block2, type='question'} -->
-<!--    * Re-draw the `hist`ogram of the `traffic` data. -->
-<!--    * For $x=0,1,\dots,16$ evaluate the Poisson probability $\mathbb{P}[X=x]$ when $X\sim\text{Po}(\widehat{\lambda})$. Save these probabilities as `probs`. -->
-<!--    * Multiply `probs` by the sample size to obtain the expected Poisson counts under this $\text{Po}(\widehat{\lambda})$ distribution. -->
-<!--    * Use the `lines` function to overlay the expected $\text{Po}(\widehat{\lambda})$ counts as a curve on top of your histogram. Does this look like a good fit to the data? -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- hist(traffic) -->
-<!-- xs <- 0:16 -->
-<!-- lines(x=xs,y=300*dpois(xs,lambda=mle),col='red',lwd=2) -->
-<!-- ``` -->
-<!-- We will return to the question of fitting distributions to data and the "goodness of fit" later next term. -->
-<!-- ## Information and inference -->
-<!-- For an iid sample $X_1,\dots,X_n$ from a sufficiently nicely-behaved density function $f(x_i~|~\theta)$ with unknown parameter $\theta$, the sampling distribution of the MLE $\widehat{\theta}$ is such that  -->
-<!--    \[ -->
-<!--    \widehat{\theta} \rightsquigarrow \text{N}\left(\theta, \frac{1}{\mathcal{I}_n(\theta)}\right), -->
-<!--    \] -->
-<!-- as $n \rightarrow\infty$. Whilst we may be used to finding Normal distributions in unusual places, this result is noteworthy as we never assumed any particular distribution of our data here. This result therefore provides us with a general method for making inferences about parameters of distributions and their MLEs for problems involving large samples! -->
-<!-- In particular, we can apply this to our Poisson data problem above to construct a large-sample approximate $100(1-\alpha)\%$ confidence interval for $\lambda$ in the form: -->
-<!-- \[ -->
-<!-- \widehat{\lambda} \pm z^*_{\alpha/2} \frac{1}{\sqrt{-\mathcal{L}''(\widehat{\lambda})}}, -->
-<!-- \] -->
-<!-- where $z^*_{\alpha/2}$ is the $\alpha/2$ critical value of a standard Normal distribution and we have estimated the expected Fisher information $\mathcal{I}_n(\theta)$ by the observed information $I(\widehat{\lambda})=-\mathcal{L}''(\widehat{\lambda})$. -->
-<!-- ```{block2, type='question'} -->
-<!--    * We can request that `R` computes the second derivative at the maximum, $\mathcal{L}''(\widehat{\lambda})$, as part of the maximisation process. To do this, re-run your optimisation, but add the additional argument `hessian=TRUE`. -->
-<!--    * The output from `optim` will now contain an additional element named `hessian`. Extract this element, multiply by -1, and save it as `obsInfo`. -->
-<!--    * Irritatingly, `obsInfo` will be in the form of a $1\times 1$ matrix rather than a scalar (as the Hessian matrix is a matrix of the second order partial derivatives). Run the following code to flatten it into a scalar so we can use it in our confidence interval: -->
-<!--    `obsInfo <- c(obsInfo)` -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- ret <- optim(1, logLike, method='Brent', lower=0, upper=100, control=list(fnscale=-1), hessian=TRUE) -->
-<!-- obsInfo <- -1*ret$hessian -->
-<!-- obsInfo <- c(obsInfo) -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!--    * Use `qnorm` or your standard Normal tables to find the critical $z^*_{\alpha/2}$ value for a 95\% confidence interval. Save this as `zcrit`. -->
-<!--    * Combine `mle`, `zcrit`, and `obsInfo` to evaluate an approximate 95\% confidence interval for $\lambda$. -->
-<!--    * Return (and possibly re-draw) the plot of your log-likelihood function, with the MLE indicated as a vertical line. Add the limits of the confidence interval to your plot as vertical green lines. -->
-<!--    * Comment on the reliability of your estimate. -->
-<!-- ```{r eval=FALSE, echo=FALSE, results='hide'} -->
-<!-- zstar <- qnorm(0.975) -->
-<!-- upr <- mle + zstar * sqrt(1/obsInfo) -->
-<!-- lwr <- mle - zstar * sqrt(1/obsInfo) -->
-<!-- ci <- c(lwr,upr) -->
-<!-- ci -->
-<!-- plot(x=lambdavals, y=ll,ty='l') -->
-<!-- abline(v=mle,col='red') -->
-<!-- abline(v=ci, col='green') -->
-<!-- ``` -->
-<!-- <!-- # Confidence intervals -->
-<p>–&gt;</p>
-<!-- <!-- Repeated CI sampling and sample size -->
-<p>–&gt;</p>
+<p>We have seen in lectures that the MLEs for the parameters of several common distributions can be found in closed form. However, in general, the problem is not guaranteed to be so easy with a simple closed-form result. Therefore, in these situations, we will have to find and maximise the likelihood numerically.</p>
+<p>For this practical, we will focus on the Poisson distribution, which is particularly appropriate for counts of events occuring randomly in time or space. While we can find a tidy mathematical result for this case, we’ll use it to illustrate the general method of maximum likelihood. Suppose we have a simple problem with one piece of data, <span class="math inline">\(X\)</span>, and we know that <span class="math inline">\(X\sim\text{Po}(\lambda)\)</span> for some unknown parameter value <span class="math inline">\(\lambda\)</span>.</p>
+<ul>
+<li><a href="scripts/practical_1-3.R">Download the R Script</a> - Right click, and Save As</li>
+</ul>
+
+<div class="goals">
+<ul>
+<li>You will need the following skills from previous practicals:
+<ul>
+<li>Basic R skills with arithmetic, functions, etc</li>
+<li>Manipulating and creating vectors: <code>c</code>, <code>seq</code>,</li>
+<li>Calculating data summaries: <code>mean</code>, <code>sum</code>, <code>length</code></li>
+<li>Drawing a histogram with <code>hist</code>, and adding simple lines to plots <code>abline</code></li>
+<li>Customising plots using <code>col</code>our</li>
+</ul></li>
+<li>New R techniques:
+<ul>
+<li>Drawing a plot of a simple function using <code>curve</code></li>
+<li>Optimising a function with <code>optim</code></li>
+<li>Extracting named elements of a list using the <code>$</code> operator</li>
+</ul></li>
+</ul>
+</div>
+<div id="the-poisson-likelihood" class="section level1" number="1">
+<h1 number="1"><span class="header-section-number">1</span> The Poisson Likelihood</h1>
+<p>Our likelihood calculations begin with writing down the likelihood function of our data. For a single observation <span class="math inline">\(X=x\)</span> from a Poisson distribution, the likelihood is the the probability of observing <span class="math inline">\(X=x\)</span> written as a function of the parameter <span class="math inline">\(\lambda\)</span>: <span class="math display">\[
+\ell(\lambda) = \mathbb{P}[X=x~|~\lambda] = \frac{e^{-\lambda}\lambda^x}{x!}.
+\]</span></p>
+<p>To begin with, suppose we observe a count of <span class="math inline">\(X=5\)</span>.</p>
+
+<div class="question">
+<ul>
+<li>Write a simple function called <code>poisson</code> that takes arguments <code>lambda</code> which evaluates the Poisson probability <span class="math inline">\(\mathbb{P}[X=5~|~\lambda]\)</span>. <em>Hint</em>: You will need the <code>exp</code> and <code>factorial</code> functions.</li>
+<li>Evaluate the Poisson probability for <span class="math inline">\(X=5\)</span> when <span class="math inline">\(\lambda=7\)</span> - you should get a value of <code>0.1277167</code>.
+</div></li>
+</ul>
+<p>What we have just created is the likelihood function, <span class="math inline">\(\ell(\lambda)\)</span>, for the Poisson parameter <span class="math inline">\(\lambda\)</span> given a single observation of <span class="math inline">\(X=5\)</span>.</p>
+<p>Before we consider a larger data problem, let’s briefly explore this simplest case of a Poisson likelihood. Let’s begin with a plot of the likelihood function itself.</p>
+
+<div class="technique">
+<p><strong>Using <code>curve</code> to plot a funtion</strong></p>
+<p>Given an expression for a function <span class="math inline">\(f(x)\)</span>, we can plot the values of <span class="math inline">\(f\)</span> for various values of <span class="math inline">\(x\)</span> in a given range. This can be accomplished using an R function called <code>curve</code>. The main syntax for <code>curve</code> is as follows:</p>
+<p><code>curve(expr, from = NULL, to = NULL, add = FALSE,...)</code></p>
+The arguments are: * <code>expr</code>: an expression or function in a variable <code>x</code> which evaluates to the function to be drawn. Examples include <code>sin(x)</code> or <code>x+3*x^2</code> * <code>from</code>, <code>to</code>: specifies the range of <code>x</code> for which the function will be plotted * <code>add</code>: if <code>TRUE</code> the graph will be added to an existing plot; if <code>FALSE</code> a new plot will be created * <code>...</code>: any of the standard plot customisation arguments can be given here (e.g. <code>col</code> for colour, <code>lty</code> for line type, <code>lwd</code> for line width)
+</div>
+<p>For example, the following code when evaluated produces the plot below:</p>
+<pre class="r"><code>curve(x^3 - 5*x, from = -4, to = 4)</code></pre>
+<p><img src="practical_1-3_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+
+<div class="question">
+<ul>
+<li>Try out using <code>curve</code> to draw a quick plot of the following functions:
+<ul>
+<li><span class="math inline">\(f(x)=3x^2+x\)</span> over <span class="math inline">\([0,10]\)</span></li>
+<li><span class="math inline">\(f(x)=sin(x)+cos(x)\)</span> over <span class="math inline">\([0,2\pi]\)</span> as a blue curve. Note: R defines <code>pi</code> as the constant <span class="math inline">\(\pi\)</span></li>
+<li>Use the <code>add=TRUE</code> option to superimpose <span class="math inline">\(g(x)=0.5sin(x)+cos(x)\)</span> as a red curve over <span class="math inline">\([0,2\pi]\)</span> on the previous plot.</li>
+</ul></li>
+<li>Now, use <code>curve</code> and your <code>poisson</code> function to draw a plot of your Poisson likelihood for <span class="math inline">\(\lambda\in[0.1, 20]\)</span>.</li>
+<li>By eye, what is the value <span class="math inline">\(\hat{\lambda}\)</span> of <span class="math inline">\(\lambda\)</span> which maximises the likelihood?
+</div></li>
+</ul>
+<p>Typically, we usually work with the log-likelihood <span class="math inline">\(\mathcal{L}(\lambda)=\log\ell(\lambda)\)</span>, rather than the likelihood itself. This can often make the mathematical maximisation simpler, the numerical computations more stable, and it is also intrinsically connected to the idea of <em>information</em> and variance (which we will consider later).</p>
+
+<div class="question">
+<ul>
+<li>Modify your <code>poisson</code> function to compute the logarithm of the Poisson probability, and call this new function <code>logPoisson</code>. You will need to use the <code>log</code> function.</li>
+<li>Re-draw the plot to show the log-likelihood against <span class="math inline">\(\lambda\)</span>. Do you find the same maximum value <span class="math inline">\(\widehat{\lambda}\)</span>?
+</div></li>
+</ul>
+</div>
+<div id="likelihood-methods-for-real-data" class="section level1" number="2">
+<h1 number="2"><span class="header-section-number">2</span> Likelihood methods for real data</h1>
+<p>The Poisson distribution has been used by traffic engineers as a model for light traffic. This assumption is based on the rationale that if the rate is approximately constant and the traffic is light (so the individual cars move independently of each other), then the distribution of counts of cars in a given time interval or space area should be nearly Poisson (Gerlough and Schuhl 1955).</p>
+<p>The following table shows the number of right turns during three hundred 3-minute intervals at a specific junction.</p>
+<table class="table table-striped" style="margin-left: auto; margin-right: auto;">
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+N
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+12
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Frequency
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+68
+</td>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+14
+</td>
+<td style="text-align:right;">
+10
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>traffic &lt;- rep(0:12, c(14,30,36,68,43,43,30,14,10,6,4,1,1))</code></pre>
+<p>Note that we interpret these data as 14 observations of the value <span class="math inline">\(0\)</span>, 30 observations of the value <span class="math inline">\(1\)</span>, and so forth.</p>
+
+<div class="question">
+<ul>
+<li>Evaluate the piece of code above to create the vector <code>traffic</code> corresponding to the above data set.</li>
+<li>Plot a <code>hist</code>ogram of the data. Does an assumption of a Poisson distribution appear reasonable?
+</div></li>
+</ul>
+<p>If we suppose a Poisson distribution might be a good choice of distribution for this dataset, we still need to find out <em>which</em> particular Poisson distribution is best by estimating the parameter <span class="math inline">\(\lambda\)</span>.</p>
+<p>Let’s begin by constructing the likelihood and log-likelihood functions for this data set of 300 observations. Assuming that the observations <span class="math inline">\(x_1, \dots, x_{300}\)</span> can be treated as 300 i.i.d. values from <span class="math inline">\(\text{Po}(\lambda)\)</span>, the log-likelihood function for the entire sample is: <span class="math display">\[
+\mathcal{L}(\lambda) = -n\lambda +\left(\sum_{i=1}^n x_i \right) \log \lambda,
+\]</span> up to an additive constant from the factorial terms (which we know we can ignore for the purposes of these calculations).</p>
+
+<div class="question">
+<ul>
+<li>Write a new functions <code>logLike</code> with a single parameter <code>lambda</code>, which evaluates the log-likelihood expression above for the <code>traffic</code> data and the supplied values of <code>lambda</code>. <em>Hint</em>: Use <code>length</code> and <code>sum</code> to compute the summary statistics.</li>
+<li>Evaluate the data log-likelihood for all <span class="math inline">\(\lambda\)</span> in <code>lambdavals</code> and plot the log-likelihood against <span class="math inline">\(\lambda\)</span>. Without further calculations, use the plot to have a guess at the maximum likelihood estimate <span class="math inline">\(\widehat{\lambda}\)</span> – we’ll check this later!
+</div></li>
+</ul>
+<p><img src="practical_1-3_files/figure-html/unnamed-chunk-16-1.png" width="672" /></p>
+<div id="maximising-the-likelihood" class="section level2" number="2.1">
+<h2 number="2.1"><span class="header-section-number">2.1</span> Maximising the likelihood</h2>
+<p>The <em>maximum likelihood estimate (MLE)</em> <span class="math inline">\(\widehat{\lambda}\)</span> for the <span class="math inline">\(\lambda\)</span> parameter of the Poisson distribution is the value of <span class="math inline">\(\lambda\)</span> which maximises the likelihood <span class="math display">\[
+\widehat{\lambda}=\operatorname{argmax}_{\lambda\in\Omega} \ell(\lambda)= \operatorname{argmax}_{\lambda\in\Omega} \mathcal{L}(\lambda).
+\]</span></p>
+<p>Therefore to find the MLE, we must maximise <span class="math inline">\(\ell\)</span> or <span class="math inline">\(\mathcal{L}\)</span>. We know we can do this analytically for certain common distributions, but in general we’ll have to optimise the function numerically instead. For such problems, <code>R</code> provides various functions to perform a numerical optimisation of a give function (even one we have defined ourself). The function we will focus on is <code>optim</code>:</p>
+
+<div class="technique">
+<p><code>R</code> offers several optimisation functions, however the one we shall be using today is <code>optim</code> which is one of the most general optimisation functions. This generality comes at the price of having a lot of optional parameters that need to be specified.</p>
+<p>For our purposes, we’re doing a 1-dimensional optimisation of a given function named <code>logLike</code>. So the syntax we will use to <em>maximise</em> this function is as follows</p>
+<p><code>optim(start, logLike, lower=lwr, upper=upr, method='Brent', control=list(fnscale=-1))</code></p>
+<p>The arguments are:</p>
+<ul>
+<li><code>start</code> : an initial value for <span class="math inline">\(\lambda\)</span> at which to start the optimisation. <em>Replace this with a sensible value.</em></li>
+<li><code>logLike</code> : this is the function we’re optimising. In general, we can replace this with any other function.</li>
+<li><code>lower=lwr, upper=upr</code> : lower and upper bounds to our search for <span class="math inline">\(\widehat{\lambda}\)</span>. <em>Replace <code>lwr</code> and <code>upr</code> with appropriate numerical values</em>; an obvious choice for this problem is the min and max of our data.</li>
+<li><code>method='Brent'</code> : this selects an appropriate optimisation algorithm for a 1-D optimisation between specified bounds. Other options are available for other classes of optimisation problem.</li>
+<li><code>control=list(fnscale=-1)</code> : this looks rather strange, but is simply telling <code>optim</code> to <em>max</em>imise the given function, rather than <em>min</em>imise which is the default (it’s instructing R to scale the function by a factor of <span class="math inline">\(-1\)</span> and minimise the result).</li>
+</ul>
+<p><code>optim</code> returns a number of values in the form of a list. The relevant components are:</p>
+<ul>
+<li><code>par</code> : the optimal value of the parameter</li>
+<li><code>value</code> : the optimum of the function being optimised.</li>
+<li><code>convergence</code>: if <code>0</code> this indicates that the optimisation has completed successfully.</li>
+</ul>
+</div>
+
+<div class="question">
+<ul>
+<li>Use <code>optim</code> to maximise the <code>logLike</code> function. You should choose an appropriate initial value for <span class="math inline">\(\lambda\)</span>, as well as sensible <code>upper</code> and <code>lower</code> bounds.</li>
+<li>What value of <span class="math inline">\(\widehat{\lambda}\)</span> do you obtain? How does this compare to your guess at the MLE?</li>
+<li>We know from lectures that the <span class="math inline">\(\widehat{\lambda}=\bar{X}\)</span> – evaluate the sample mean of the <code>traffic</code> data. Does this agree with your results from directly maximising the log-likelihood?
+</div></li>
+</ul>
+<p>You should see output something like this:</p>
+<pre><code>## $par
+## [1] 3.893333
+## 
+## $value
+## [1] 419.6223
+## 
+## $counts
+## function gradient 
+##       NA       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL</code></pre>
+
+<div class="technique">
+<p>The output of <code>optim</code> is in the form of a <code>list</code>. Unlike vectors, <code>list</code>s can combine many different variables together (numbers, strings, matrices, etc) and each element of a list can be given a name to make it easier to access.</p>
+<p>For example, we can create our own lists using the <code>list</code> function:</p>
+<p><code>test &lt;- list(Name='Donald', IQ=-10, Vegetable='Potato')</code></p>
+<p>Once created, we can access the named elements of the list using the <code>$</code> operator. For example,</p>
+<p><code>test$IQ</code></p>
+<p>will return the value saved to <code>IQ</code> in the list, i.e. <code>-10</code>. RStudio will show auto-complete suggestions for the elements of the list after you press <code>$</code>, which can help make life easier.</p>
+</div>
+<p>We can use this <code>$</code> operator to extract the MLE value from <code>optim</code> by first saving the results to a variable, called <code>results</code> say, and then extracting the list element named <code>par</code>, which corresponds to the maximising value of <span class="math inline">\(\lambda\)</span>.</p>
+
+<div class="question">
+<ul>
+<li>Extract the optimal value of <span class="math inline">\(\lambda\)</span> from the output of <code>optim</code> and save it to a new variable called <code>mle</code>.</li>
+<li>Re-draw your plot of the log-likelihood function, and use <code>abline</code> to:
+<ul>
+<li>Add a red solid vertical line at <span class="math inline">\(\lambda=\widehat{\lambda}\)</span>. <em>Hint:</em> pass the <code>col='red'</code> argument to your plotting function.</li>
+<li>Add a blue dashed vertical line at <span class="math inline">\(\lambda=\bar{x}\)</span>.</li>
+</ul></li>
+<li>Do the results agree with each other, and with your guess at <span class="math inline">\(\widehat{\lambda}\)</span>?
+</div></li>
+</ul>
+<p>Let’s return to the original distribution of the data. The results of our log-likelihood analysis suggest that a Poisson distribution with parameter <span class="math inline">\(\widehat{\lambda}\)</span> is the best choice of Poisson distributions for this data set.</p>
+<p>TODO: THIS DOESNT QUITE FIT NOW</p>
+
+<div class="question">
+<ul>
+<li>Re-draw the <code>hist</code>ogram of the <code>traffic</code> data.</li>
+<li>Modify your <code>poisson</code> function to evaluate the Poisson probability <span class="math inline">\(\mathbb{P}[X=x]\)</span> when <span class="math inline">\(X\sim\text{Po}(\widehat{\lambda})\)</span>. Save the function as <code>poissonProb</code>.</li>
+<li>The expected number of Poisson counts under this <span class="math inline">\(\text{Po}(\widehat{\lambda})\)</span> distribution will be <span class="math inline">\(300\times\mathbb{P}[X=x]\)</span>, for <span class="math inline">\(x=0,\dots,16\)</span>. Use the <code>curve</code> function to <code>add</code> draw this function over your histogram in red. (We will ignore the fact that <span class="math inline">\(X\)</span> is discrete for the time-being.)</li>
+<li>Does this look like a good fit to the data?
+</div></li>
+</ul>
+<p>We will return to the question of fitting distributions to data and the “goodness of fit” later next term.</p>
+</div>
+<div id="information-and-inference" class="section level2" number="2.2">
+<h2 number="2.2"><span class="header-section-number">2.2</span> Information and inference</h2>
+<p>For an iid sample <span class="math inline">\(X_1,\dots,X_n\)</span> from a sufficiently nicely-behaved (“regular”) density function <span class="math inline">\(f(x_i~|~\theta)\)</span> with unknown parameter <span class="math inline">\(\theta\)</span>, the sampling distribution of the MLE <span class="math inline">\(\widehat{\theta}\)</span> is such that <span class="math display">\[
+    \widehat{\theta} \rightsquigarrow \text{N}\left(\theta, \frac{1}{\mathcal{I}_n(\theta)}\right),
+    \]</span> as <span class="math inline">\(n \rightarrow\infty\)</span>. For large samples, we can also replace the expected Fisher information in the variance with the observed information, <span class="math inline">\(I(\hat{\theta})=-\mathcal{L}&#39;&#39;(\widehat{\theta})\)</span> instead, Whilst we may be used to finding Normal distributions in unusual places, this result is noteworthy as we never assumed any particular distribution of our data here. This result therefore provides us with a general method for making inferences about parameters of distributions and their MLEs for problems involving large samples!</p>
+<p>In particular, we can apply this to our Poisson data problem above to construct a large-sample approximate <span class="math inline">\(100(1-\alpha)\%\)</span> confidence interval for <span class="math inline">\(\lambda\)</span> in the form: <span class="math display">\[
+\widehat{\lambda} \pm z^*_{\alpha/2} \frac{1}{\sqrt{-\mathcal{L}&#39;&#39;(\widehat{\lambda})}},
+\]</span> where <span class="math inline">\(z^*_{\alpha/2}\)</span> is the <span class="math inline">\(\alpha/2\)</span> critical value of a standard Normal distribution and we have estimated the expected Fisher information <span class="math inline">\(\mathcal{I}_n(\theta)\)</span> by the observed information <span class="math inline">\(I(\widehat{\lambda})=-\mathcal{L}&#39;&#39;(\widehat{\lambda})\)</span>.</p>
+
+<div class="question">
+<ul>
+<li>We can request that <code>R</code> computes the second derivative at the maximum, <span class="math inline">\(\mathcal{L}&#39;&#39;(\widehat{\lambda})\)</span>, as part of the maximisation process. To do this, re-run your optimisation, but add the additional argument <code>hessian=TRUE</code>.
+</div></li>
+</ul>
+<p>You should now obtain R output that looks like this:</p>
+<pre><code>## $par
+## [1] 3.893333
+## 
+## $value
+## [1] 419.6223
+## 
+## $counts
+## function gradient 
+##       NA       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+## 
+## $hessian
+##           [,1]
+## [1,] -77.05481</code></pre>
+
+<div class="question">
+<ul>
+<li>The output from <code>optim</code> will now contain an additional element named <code>hessian</code>. Extract this element, multiply by -1, and save it as <code>obsInfo</code>.</li>
+<li>To get the variance of <span class="math inline">\(\widehat{\lambda}\)</span> we need to invert the information matrix. We can achieve this using R’s <code>solve</code> function. Try this now on <code>obsInfo</code>. Save this to <code>varMLE</code>.</li>
+<li>As <code>obsInfo</code> is just a scalar (or a <span class="math inline">\(1\times1\)</span> matrix), we should just return the reciprocal <span class="math inline">\(\frac{1}{I(\widehat{\lambda})}\)</span> - check this now!</li>
+<li>Finally, <code>varMLE</code> will be in the form of a <span class="math inline">\(1\times 1\)</span> matrix rather than a scalar (as the Hessian matrix is a matrix of the second order partial derivatives). To extract the value from within the matrix, run the following code <code>varMLE &lt;- varMLE[1,1]</code>
+</div></li>
+</ul>
+
+<div class="question">
+<ul>
+<li>Use your standard Normal tables (or R’s built-in function <code>qnorm</code>) to find the critical <span class="math inline">\(z^*_{\alpha/2}\)</span> value for a 95% confidence interval. Save this as <code>zcrit</code>.</li>
+<li>Combine <code>mle</code>, <code>zcrit</code>, and <code>varMLE</code> to evaluate an approximate 95% Wald confidence interval for <span class="math inline">\(\lambda\)</span>.</li>
+<li>Return (and possibly re-draw) the plot of your log-likelihood function, with the MLE indicated as a vertical line. Add the limits of the confidence interval to your plot as vertical green lines.</li>
+<li>What does the confidence interval suggest about the reliability of your estimate.</li>
+<li>Does the log-likelihood look reasonably quadratic near the MLE? Does this affect your conclusions, and how would you investigate this further?
+</div></li>
+</ul>
+<!-- # Confidence intervals -->
+<!-- Repeated CI sampling and sample size -->
+</div>
+</div>
 
 
 
