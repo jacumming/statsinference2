@@ -13,8 +13,8 @@
 
 <title>R Techniques 4: Vectors</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
-<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -62,6 +62,7 @@ if (window.hljs) {
 
 
 
+
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
 
@@ -86,6 +87,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -143,11 +147,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -176,8 +184,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -185,16 +193,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -311,12 +312,12 @@ div.tocify {
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -328,7 +329,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 1
      
     <span class="caret"></span>
@@ -349,7 +350,7 @@ div.tocify {
   </ul>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 2
      
     <span class="caret"></span>
@@ -382,7 +383,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-question-circle"></span>
      
     R Help
@@ -444,57 +445,93 @@ div.tocify {
 
 
 <div id="vectors" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Vectors</h1>
-<p>Vectors are a sequence of values of the same type and the most basic type of data in <em>R</em>. Even a single value is treated as a vector of length 1. When all of the elements of the vector are numbers, the vector behaves as a mathematical vector and <em>R</em> contains many linear algebra tools and functions that allow us to perform basic linear algebra.</p>
+<h1><span class="header-section-number">1</span> Vectors</h1>
+<p>Vectors are a sequence of values of the same type and the most basic
+type of data in <em>R</em>. Even a single value is treated as a vector
+of length 1. When all of the elements of the vector are numbers, the
+vector behaves as a mathematical vector and <em>R</em> contains many
+linear algebra tools and functions that allow us to perform basic linear
+algebra.</p>
 <div id="vector-c" class="section level2" number="1.1">
-<h2 number="1.1"><span class="header-section-number">1.1</span> Creating vectors</h2>
-<p>The most basic way to create a vector is to use th <code>c</code> function to ‘<code>c</code>ombine’ several values of the same type into a vector. Remember that all the values must be of the same type (numerical, logical, character) within a vector - if you mix up the variable types they will be changed to a common type in the vector</p>
+<h2><span class="header-section-number">1.1</span> Creating vectors</h2>
+<p>The most basic way to create a vector is to use th <code>c</code>
+function to ‘<code>c</code>ombine’ several values of the same type into
+a vector. Remember that all the values must be of the same type
+(numerical, logical, character) within a vector - if you mix up the
+variable types they will be changed to a common type in the vector</p>
 <pre class="r"><code>x &lt;- c(1,2,3) ## numerical vector
 y &lt;- c(&quot;cat&quot;,&quot;dog&quot;) ## character vector
 z &lt;- c(TRUE,FALSE,FALSE,TRUE) ## logical vector
 v &lt;- c(1,&quot;cat&quot;,FALSE) ## these will all be converted to character data</code></pre>
-<p>The <code>c</code> function can also be used to combine vectors together:</p>
+<p>The <code>c</code> function can also be used to combine vectors
+together:</p>
 <pre class="r"><code>c(x, c(10,9,8,7))</code></pre>
 <pre><code>## [1]  1  2  3 10  9  8  7</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/c.html">c</a></p>
-<p><em>R</em> provides some simple functions for quickly creating numerical vectors.</p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/c.html">c</a></p>
+<p><em>R</em> provides some simple functions for quickly creating
+numerical vectors.</p>
 <div id="Colon" class="section level3" number="1.1.1">
-<h3 number="1.1.1"><span class="header-section-number">1.1.1</span> Generate sequences with <code>:</code></h3>
-<p>We can use the colon <code>:</code> operator to create integer sequences between two values and return the result as a vector:</p>
+<h3><span class="header-section-number">1.1.1</span> Generate sequences
+with <code>:</code></h3>
+<p>We can use the colon <code>:</code> operator to create integer
+sequences between two values and return the result as a vector:</p>
 <pre class="r"><code>x &lt;- 1:9
 x</code></pre>
 <pre><code>## [1] 1 2 3 4 5 6 7 8 9</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Colon.html">: operator</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Colon.html">:
+operator</a></p>
 </div>
 <div id="seq" class="section level3" number="1.1.2">
-<h3 number="1.1.2"><span class="header-section-number">1.1.2</span> Generate sequences with <code>seq</code></h3>
-<p>The <code>seq</code> function also generates a sequence between its two arguments <code>from</code> and <code>to</code>, but is more sophisticated than <code>:</code>. We can dictate the length of the sequence by supplying the optional <code>length</code> argument, or the step size in the sequence by passing a value to the <code>by</code> argument. If we supply neither <code>length</code> nor <code>by</code>, then <code>seq</code> gives an integer sequence like <code>:</code>.</p>
+<h3><span class="header-section-number">1.1.2</span> Generate sequences
+with <code>seq</code></h3>
+<p>The <code>seq</code> function also generates a sequence between its
+two arguments <code>from</code> and <code>to</code>, but is more
+sophisticated than <code>:</code>. We can dictate the length of the
+sequence by supplying the optional <code>length</code> argument, or the
+step size in the sequence by passing a value to the <code>by</code>
+argument. If we supply neither <code>length</code> nor <code>by</code>,
+then <code>seq</code> gives an integer sequence like <code>:</code>.</p>
 <pre class="r"><code>y &lt;- seq(1,9)
 y ## same as x</code></pre>
 <pre><code>## [1] 1 2 3 4 5 6 7 8 9</code></pre>
 <pre class="r"><code>seq(1,10,length=19) ## sequence of given length</code></pre>
-<pre><code>##  [1]  1.0  1.5  2.0  2.5  3.0  3.5  4.0  4.5  5.0  5.5  6.0  6.5  7.0  7.5  8.0  8.5  9.0  9.5 10.0</code></pre>
+<pre><code>##  [1]  1.0  1.5  2.0  2.5  3.0  3.5  4.0  4.5  5.0  5.5  6.0  6.5  7.0  7.5  8.0
+## [16]  8.5  9.0  9.5 10.0</code></pre>
 <pre class="r"><code>seq(15,45,by=3) ## sequence of given step</code></pre>
 <pre><code>##  [1] 15 18 21 24 27 30 33 36 39 42 45</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html">seq</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html">seq</a></p>
 </div>
 <div id="rep" class="section level3" number="1.1.3">
-<h3 number="1.1.3"><span class="header-section-number">1.1.3</span> Replicate values with <code>rep</code></h3>
-<p>R also allows you to easily create vectors by repeating elements and joining them together into a vector using the <code>rep</code> function. We can also repeat entire vectors using <code>rep</code>, or use a vector in the number of repetitions to repeat each element a different number of times.</p>
+<h3><span class="header-section-number">1.1.3</span> Replicate values
+with <code>rep</code></h3>
+<p>R also allows you to easily create vectors by repeating elements and
+joining them together into a vector using the <code>rep</code> function.
+We can also repeat entire vectors using <code>rep</code>, or use a
+vector in the number of repetitions to repeat each element a different
+number of times.</p>
 <pre class="r"><code>rep(10, 5)</code></pre>
 <pre><code>## [1] 10 10 10 10 10</code></pre>
 <pre class="r"><code>rep(1:3, 6)</code></pre>
 <pre><code>##  [1] 1 2 3 1 2 3 1 2 3 1 2 3 1 2 3 1 2 3</code></pre>
 <pre class="r"><code>rep(1:3, 4:2)</code></pre>
 <pre><code>## [1] 1 1 1 1 2 2 2 3 3</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html">rep</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/rep.html">rep</a></p>
 </div>
 </div>
 <div id="working-with-vectors" class="section level2" number="1.2">
-<h2 number="1.2"><span class="header-section-number">1.2</span> Working with vectors</h2>
+<h2><span class="header-section-number">1.2</span> Working with
+vectors</h2>
 <div id="vec-arithmetic" class="section level3" number="1.2.1">
-<h3 number="1.2.1"><span class="header-section-number">1.2.1</span> Vector arithmetic</h3>
-<p>Given a numerical vector (or a list of numbers), most of the basic arithmetic operations and mathematical functions can be applied to the whole vector and can be used to quickly perform a large number of calculations with a single command.</p>
+<h3><span class="header-section-number">1.2.1</span> Vector
+arithmetic</h3>
+<p>Given a numerical vector (or a list of numbers), most of the basic
+arithmetic operations and mathematical functions can be applied to the
+whole vector and can be used to quickly perform a large number of
+calculations with a single command.</p>
 <pre class="r"><code>a &lt;- c(1,2,3,4)
 a</code></pre>
 <pre><code>## [1] 1 2 3 4</code></pre>
@@ -504,11 +541,22 @@ a</code></pre>
 <pre><code>## [1] 0.0000000 0.6931472 1.0986123 1.3862944</code></pre>
 <pre class="r"><code>(a + sqrt(a))/(exp(2)+1)</code></pre>
 <pre><code>## [1] 0.2384058 0.4069842 0.5640743 0.7152175</code></pre>
-<p>We can apply standard operations to multiple vectors. The calculations will be performed element-by-element and the results returned as a new vector.</p>
+<p>We can apply standard operations to multiple vectors. The
+calculations will be performed element-by-element and the results
+returned as a new vector.</p>
 <pre class="r"><code>b &lt;- a - 10
 (a+3)/(sqrt(1-b)*2-1)</code></pre>
 <pre><code>## [1] 0.7512364 1.0000000 1.2884234 1.6311303</code></pre>
-<p>When you do operations on vectors they are performed on an element by element basis. One ramification of this is that all of the vectors in an expression must be the same length. If the lengths of the vectors differ, then you may get an error message. However, R still returns an answer which it produces by repeating the elements of the shortest vector until it is of the correct length and then doing the computation. Obviously, if this is not what you intended then this can have unpredictable and dangerous results. In the example below, elements of <code>a</code> are repeated until it is of length 4 and then added to <code>b</code>:</p>
+<p>When you do operations on vectors they are performed on an element by
+element basis. One ramification of this is that all of the vectors in an
+expression must be the same length. If the lengths of the vectors
+differ, then you may get an error message. However, R still returns an
+answer which it produces by repeating the elements of the shortest
+vector until it is of the correct length and then doing the computation.
+Obviously, if this is not what you intended then this can have
+unpredictable and dangerous results. In the example below, elements of
+<code>a</code> are repeated until it is of length 4 and then added to
+<code>b</code>:</p>
 <pre class="r"><code>a &lt;- c(1,2,3)
 b &lt;- c(10,11,12,13)
 a+b</code></pre>
@@ -517,14 +565,18 @@ a+b</code></pre>
 <pre><code>## [1] 11 13 15 14</code></pre>
 </div>
 <div id="useful-vector-functions" class="section level3" number="1.2.2">
-<h3 number="1.2.2"><span class="header-section-number">1.2.2</span> Useful vector functions</h3>
+<h3><span class="header-section-number">1.2.2</span> Useful vector
+functions</h3>
 <ul>
 <li><code>length</code> {#length} returns the length of the vector</li>
 </ul>
 <pre class="r"><code> length(a)</code></pre>
 <pre><code>## [1] 3</code></pre>
 <ul>
-<li><code>sort</code> {#sort} returns a new vector obtained by sorting the elements of the argument vector into ascending order. Descending order can be obtained by setting the optional argument <code>decreasing=TRUE</code>.</li>
+<li><code>sort</code> {#sort} returns a new vector obtained by sorting
+the elements of the argument vector into ascending order. Descending
+order can be obtained by setting the optional argument
+<code>decreasing=TRUE</code>.</li>
 </ul>
 <pre class="r"><code>a &lt;- c(5,9,2,1,3)
 sort(a)</code></pre>
@@ -532,52 +584,80 @@ sort(a)</code></pre>
 <pre class="r"><code>sort(a,decreasing=TRUE)</code></pre>
 <pre><code>## [1] 9 5 3 2 1</code></pre>
 <ul>
-<li><code>rev</code> {#rev} reverse the order of the elements in the given vector</li>
+<li><code>rev</code> {#rev} reverse the order of the elements in the
+given vector</li>
 </ul>
 <pre class="r"><code>rev(a)</code></pre>
 <pre><code>## [1] 3 1 2 9 5</code></pre>
 <ul>
-<li><code>unique</code> {#unique} returns the unique elements in the given vector</li>
+<li><code>unique</code> {#unique} returns the unique elements in the
+given vector</li>
 </ul>
 <pre class="r"><code>vals &lt;- c(1,2,3,2,3,3,1,2,5,1,2,2,2,2,3,1,1)
 unique(vals)</code></pre>
 <pre><code>## [1] 1 2 3 5</code></pre>
 <ul>
-<li><code>table</code> {#table} constructs a table of counts for the occurrence of each unique element in the given vector</li>
+<li><code>table</code> {#table} constructs a table of counts for the
+occurrence of each unique element in the given vector</li>
 </ul>
 <pre class="r"><code>table(vals)</code></pre>
 <pre><code>## vals
 ## 1 2 3 5 
 ## 5 7 4 1</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/length.html">length</a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/rev.html">rev</a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/unique.html">unique</a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/table.html">table</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/length.html">length</a>,
+<a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/rev.html">rev</a>,
+<a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/unique.html">unique</a>,
+<a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/table.html">table</a></p>
 </div>
 </div>
 <div id="subset" class="section level2" number="1.3">
-<h2 number="1.3"><span class="header-section-number">1.3</span> Selecting vector elements</h2>
-<p>Given a vector of data one common task is to isolate and extract particular entries from the larger list. Here we show how to use R’s indexing notation to pick out specific items within a vector.</p>
-<p>To extract an element from a known position within the vector, we use square brackets <code>[]</code> and state the index of the element we want within the brackets as follows:</p>
+<h2><span class="header-section-number">1.3</span> Selecting vector
+elements</h2>
+<p>Given a vector of data one common task is to isolate and extract
+particular entries from the larger list. Here we show how to use R’s
+indexing notation to pick out specific items within a vector.</p>
+<p>To extract an element from a known position within the vector, we use
+square brackets <code>[]</code> and state the index of the element we
+want within the brackets as follows:</p>
 <pre class="r"><code>a &lt;- c(6,2,5,3,8,2)
 a[3] ## third element of a</code></pre>
 <pre><code>## [1] 5</code></pre>
-<p>To extract all the elements of the vector except for one element at a known position we can pass the index as a negative number into the square brackets</p>
+<p>To extract all the elements of the vector except for one element at a
+known position we can pass the index as a negative number into the
+square brackets</p>
 <pre class="r"><code>a[-3] ## all but the third element of a</code></pre>
 <pre><code>## [1] 6 2 3 8 2</code></pre>
-<p>To extract multiple elements, we can supply a vector of indices to extract</p>
+<p>To extract multiple elements, we can supply a vector of indices to
+extract</p>
 <pre class="r"><code>a[c(1,3,5)]</code></pre>
 <pre><code>## [1] 6 5 8</code></pre>
 <pre class="r"><code>a[1:3]</code></pre>
 <pre><code>## [1] 6 2 5</code></pre>
 <pre class="r"><code>a[-(1:3)]</code></pre>
 <pre><code>## [1] 3 8 2</code></pre>
-<p>We can also use any logical vector can be used as an index, which opens a wide range of possibilities. For example, you can remove or focus on entries that match specific criteria. For example, you might want to remove all entries that are above a certain value:</p>
+<p>We can also use any logical vector can be used as an index, which
+opens a wide range of possibilities. For example, you can remove or
+focus on entries that match specific criteria. For example, you might
+want to remove all entries that are above a certain value:</p>
 <pre class="r"><code>a&lt;5</code></pre>
 <pre><code>## [1] FALSE  TRUE FALSE  TRUE FALSE  TRUE</code></pre>
 <pre class="r"><code>a[a&lt;5]</code></pre>
 <pre><code>## [1] 2 3 2</code></pre>
 <pre class="r"><code>a[a%%2 == 0] # only select even values</code></pre>
 <pre><code>## [1] 6 2 8 2</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html">[] for subsetting</a></p>
-<p><code>which</code> is a function that takes a vector of logical (<code>TRUE</code> or <code>FALSE</code>) values and returns the indices of those which are true. While superifically this doesn’t seem very useful, if the vector of logical values was the result of a comparison or test of the values of another vector then <code>which</code> will tell us which elements of the vector passed the test:</p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Extract.html">[]
+for subsetting</a></p>
+<p><code>which</code> is a function that takes a vector of logical
+(<code>TRUE</code> or <code>FALSE</code>) values and returns the indices
+of those which are true. While superifically this doesn’t seem very
+useful, if the vector of logical values was the result of a comparison
+or test of the values of another vector then <code>which</code> will
+tell us which elements of the vector passed the test:</p>
 <pre class="r"><code>which(a&lt;5)</code></pre>
 <pre><code>## [1] 2 4 6</code></pre>
 </div>

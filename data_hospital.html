@@ -13,8 +13,8 @@
 
 <title>Data Set: hospital</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
-<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -62,6 +62,7 @@ if (window.hljs) {
 
 
 
+
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
 
@@ -86,6 +87,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -143,11 +147,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -176,8 +184,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -185,16 +193,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -311,12 +312,12 @@ div.tocify {
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -328,7 +329,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 1
      
     <span class="caret"></span>
@@ -349,7 +350,7 @@ div.tocify {
   </ul>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 2
      
     <span class="caret"></span>
@@ -382,7 +383,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-question-circle"></span>
      
     R Help
@@ -444,23 +445,29 @@ div.tocify {
 
 
 <div id="data-description" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Data description</h1>
+<h1><span class="header-section-number">1</span> Data description</h1>
 <p><strong>Patient discharges from short-stay hospitals</strong></p>
 <p><em>Description</em></p>
-<p>The data comprise the numbers of discharges for 393 short-stay hospitals during January 1968.</p>
+<p>The data comprise the numbers of discharges for 393 short-stay
+hospitals during January 1968.</p>
 <p><em>Format</em></p>
 <p>This data frame contains the following columns:</p>
 <ul>
 <li><code>beds</code> - number of beds</li>
-<li><code>discharges</code> - number of discharges during January 1968</li>
+<li><code>discharges</code> - number of discharges during January
+1968</li>
 <li><code>region</code> - unspecified geographical region</li>
 </ul>
 <p><em>Source</em></p>
-<p>J. A. Rice (1985). Mathematical Statistics and Data Analysis (2nd Edition), p186. Belmont, California: Duxbury Press.</p>
+<p>J. A. Rice (1985). Mathematical Statistics and Data Analysis (2nd
+Edition), p186. Belmont, California: Duxbury Press.</p>
 </div>
 <div id="loading-the-data" class="section level1" number="2">
-<h1 number="2"><span class="header-section-number">2</span> Loading the data</h1>
-<p>To load the data, either load it from the <code>durham</code> data library using the <code>data</code> function, or copy and paste the code below into the <code>R</code> Console.</p>
+<h1><span class="header-section-number">2</span> Loading the data</h1>
+<p>To load the data, either download the data file from the link below
+or copy/paste the code fragment below into the R console.</p>
+<p><i class="fa fa-database"></i> Download data: <a
+href="hospital.Rda">hospital</a></p>
 <pre class="r"><code>hospital &lt;- data.frame(
   beds=c(10,16,20,24,25,26,30,34,38,40,43,50,50,57,62,64,67,69,70,73,81,91,96,100,100,103,110,111,116,120,122,127,130,137,142,145,150,154,160,163,170,180,184,192,200,206,214,224,228,233,241,247,252,257,263,268,273,276,284,289,297,303,307,310,322,327,388,347,352,359,365,370,378,390,400,408,418,437,450,467,474,490,498,506,523,534,541,550,558,577,591,606,635,670,719,816,838,918,986,14,18,20,25,25,27,30,35,38,40,47,50,50,59,62,64,67,69,70,74,86,95,98,100,100,104,110,111,118,120,123,128,134,138,143,145,151,155,160,165,175,180,185,193,204,207,214,225,229,235,242,247,254,260,264,269,275,279,285,291,300,304,308,312,324,330,339,347,354,361,366,373,380,391,400,411,419,437,451,469,478,492,500,509,524,536,543,550,562,579,592,613,650,684,760,817,857,936,15,19,20,25,25,28,32,35,39,41,48,50,56,61,63,65,67,70,70,80,88,95,99,100,102,106,110,111,119,120,125,128,135,139,144,145,151,156,160,169,178,181,187,195,204,207,224,227,229,235,244,248,255,261,265,269,275,279,286,295,300,307,309,313,325,330,340,348,357,365,367,374,385,393,400,411,422,438,461,470,479,493,500,510,524,538,543,551,566,583,600,625,652,712,774,829,860,937,15,19,24,25,26,29,32,37,40,43,49,50,57,61,63,65,68,70,70,80,90,96,100,100,102,108,110,113,119,121,126,129,135,141,145,150,152,159,161,170,180,184,188,196,205,210,224,227,231,235,244,252,256,261,268,270,275,282,287,297,302,307,310,318,327,332,340,350,358,365,368,374,386,394,401,417,425,445,463,472,480,496,505,517,530,540,549,556,573,584,606,631,658,712,785,830,904,957), 
   discharges=c(57,35,23,120,92,98,118,66,95,87,141,260,229,247,91,240,255,233,315,200,266,120,228,362,414,518,389,273,440,431,534,535,426,505,322,475,621,486,637,690,665,479,652,625,695,703,918,558,955,684,610,1084,995,974,811,773,956,852,456,233,539,715,935,1226,876,946,1425,1166,1098,1029,1766,1156,896,1373,2190,1719,1040,1632,1705,1665,1258,1390,1657,1527,1232,2034,1376,986,1152,1509,999,1218,1606,1707,2058,1239,2135,1678,2268,64,56,90,36,64,89,79,100,78,121,174,186,194,297,182,225,321,253,233,297,270,243,308,383,265,309,439,498,134,373,416,323,381,592,384,337,376,467,590,360,592,531,635,504,697,814,726,1186,1175,669,601,1028,956,1076,1009,884,1201,754,1007,824,778,1036,1031,912,1232,471,885,906,876,889,1225,787,1009,1389,1219,989,1315,1346,1584,1012,1835,1126,1785,2031,1350,1418,1093,1287,2116,1415,1648,1463,1620,1504,1283,1706,1624,1394,41,42,22,49,103,85,52,75,153,213,81,296,115,308,242,239,215,209,258,297,310,243,346,318,227,311,368,95,345,414,231,557,411,244,453,283,543,778,402,662,446,573,1011,744,670,726,590,410,439,629,858,928,1160,788,609,887,1063,861,941,764,557,1153,985,1016,1049,872,1133,1219,915,966,1453,1137,1150,926,1095,808,1089,1370,1948,1322,1534,1355,1744,2051,1805,1522,1780,1645,1828,1583,2154,2240,2150,1893,2844,2766,2818,1894,76,48,170,14,100,109,125,108,124,210,173,87,220,58,222,231,259,216,244,301,326,377,444,373,371,327,298,594,360,467,427,707,362,355,828,470,538,487,611,689,84,481,713,586,622,670,587,732,931,925,490,810,705,795,1106,951,632,767,1097,842,958,855,1042,944,1210,1400,1097,1173,976,956,1413,1231,1272,1060,1634,1369,1347,1105,1617,1239,1149,1301,1669,834,1420,1386,1547,1478,1789,1326,1785,1684,1376,2089,2171,1715,2700,1765), 

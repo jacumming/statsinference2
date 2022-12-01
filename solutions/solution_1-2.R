@@ -1,180 +1,241 @@
 #
-# PRACTICAL 1-2: Sampling Distributions
+# PRACTICAL 1-2: Sampling and Simulation
 # ---------------------------------
 #
 #
-# In this session we perform simple simulation exercises in order to investigate the properties
-# of the sample mean introduced in the lectures.
+# In this practical, we introduce the ideas of statistical simulation as a mechanism
+# to investigate the behaviour of sampling distributions in a case study problem
+# of jury selection. We'll expand our R techniques to see how to write custom 
+# functions, to sample and generate random numbers, and how to repeat straightforward
+# calculations an arbitrary number of times.
+
+
+
+ # *  You will need the following skills from previous practicals:
+ #    *   Basic R skills with arithmetic, functions, etc
+ #    *   Manipulating and creating vectors: `c`, `seq`,
+ #    *   Calculating data summaries: `mean`, `sd`, `var`, `min`, `max`
+ #    *   Plotting a histogram with `hist`
+ # *  New R techniques:
+ #    *   Sampling from a vector using `sample`
+ #    *   Generating random numbers from a binomial distribution using `rbinom`
+ #    *   Creating new functions with `function`
+ #    *   Using `replicate` to repeatedly call a function with no arguments
+ #    *   Adding straight lines to plots with `abline`
+
+
+
+
+#
+#
+# 1. Jury selection: Swain vs. Alabama (1965)
+# ==================================================================================
+#
+# The context of our problem today is concerns the selection of a jury in a trial
+# in 1965 Alabama, USA. In the early 1960s, in Talladega County in Alabama, a Black
+# man called Robert Swain was convicted and was sentenced to death. At the time, 
+# only men aged 21 or older were allowed to serve on juries in Talladega County, 
+# where 26% of the eligible jurors were Black. Of the 100 jurors available in the 
+# jury panel, only 8 were Black and no Black man was selected for the jury of the
+# actual trial itself.
+
+# Robert Swain appealed his sentence, citing among other factors the fact the jury
+# at his trial was all White. Moreover, he pointed out that all Talladega County 
+# jury panels for the past 10 years had contained only a small percent of Black 
+# panelists. Robert Swain was represented in the U.S. Supreme Court by Constance 
+# Baker Motley (https://en.wikipedia.org/wiki/Constance_Baker_Motley), the first 
+# African-American woman to argue a case in that Court. She argued 10 cases in the
+# Supreme Court and lost only one – Robert Swain's. The U.S. Supreme Court concluded,
+# "the overall percentage disparity has been small" and that there was insufficient
+# evidence of "invidious discrimination".
 # 
-# Today we will learn R techniques beyond those seen in the first year (if you were a Statistics I
-# student), including the use of loops and writing your own functions. 
-  
+# But was this assertion reasonable? If jury panelists were selected at random 
+# from the county’s eligible population, there would be some chance variation. We
+# wouldn’t get exactly 26 Black panelists on every 100-person panel. But would we
+# expect as few as eight? In this practical, we will use statistical simulation to
+# investigate how plausible such an outcome would be, given the composition of the
+# wider population of potential jurors.
 
-# You will need the following skills from previous practicals:
-#   *   Basic R skills with arithmetic, functions, etc
-#   *   Manipulating and creating vectors: `c`, `seq`, 
-#   *   Calculating data summaries: `mean`, `sd`, `var`, `min`, `max`
-#   *   Plotting a scatterplot with `plot`, and a histogram with `hist`
-#
-# New R techniques:
-#   *   Sampling with and without replacement from a vector using `sample`
-#   *   Creating new functions with `function`
-#   *   Creating traditional `for` loops to iterate calculations
-#   *   Using `sapply` to repeat calculations over a vector of values
-#   *   Using `par(mfrow=c(a,b))` to setup a grid of plots
-#   *   Adding straight lines to plots with `abline`
+
+
 
 #
 #
-# 1. Sampling without replacement
+# 2. Simulation and sampling 
 # ==================================================================================
 #
-# We'll be using the `hospital` data set from the `durham` library in our sampling
-# experiments. So, before we begin you'll need to load the data:
+# Statistical simulation - or the Monte Carlo method(https://en.wikipedia.org/wiki/Monte_Carlo_method)
+# is a statistical technique where we artificially generate ("simulate") data in 
+# order to explore sampling distributions, investigate the behaviour of statistical
+# methods, and test hypotheses. These methods are particularly useful when the
+# corresponding mathematical calculations are difficult or even impossible. Of 
+# course, since our results are a product of how we set up the simulation we must
+# take particular care in setting up the problem and interpreting what we find.
+# 
+# For this practical, we will use R and a bit of statistical thinking to examine 
+# the disparity between the 8 out of 100 Black men in the jury panel, the 
+# distribution of the actual jury, and the distribution in the population.
 
 
 #
-# Exercise:
-# ~~~~~~~~~~~~~
-# * Refer to the worksheet from last time and either:
-#    * Load the `durham` library and the `hospital` data set.
-#    * If you have problems loading the library, follow the link on the webpage to create
-#      the data set without the library
-# * Create a new vector called `disch` (or similar) containing the data for the number of 
-#   discharges in the `hospital` data.
-
-
-
-library(durham)
-data(hospital)
-disch <- hospital$discharges
-
-
-
-
-
-# Recall that our general approach to sampling is to sample without replacement, so we don't
-# repeatedly observe the same individual from the population. We can use `R`'s `sample` function
-# to take random samples from a specified population vector, and we can do so either with or 
-# without replacement.
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ The `sample` function allows us to take a sample of a specified size from a vector of values
-# ^ which is treated as the population. 
-# ^ 
-# ^ If we have a population vector `pop` and we want to take a sample of size `n` without replacement,
-# ^ then we use the following command:
-# ^   
-# ^ `sample(pop, n)`
-# ^ 
-# ^ If we want to sample _with_ replacement, then we can add the additional optional argument
-# ^ `replace=TRUE`.
-# ^ 
-# ^ Finally, the default is for all of the elements of the population to have equal probability. This
-# ^ can be changed to specified probability weights using the `prob` argument, but we won't be looking
-# ^ into that any further. See the help file (by running `?sample`) for more details on the `sample`
-# ^ function.
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-#
-# Exercise:
-# ~~~~~~~~~~~~~
-# * Draw a sample (without replacement) of size n=4 from the discharges data.
-# * Draw another sample of size n=4  - do you get the same sample values?
-# * Let's experiment with changing the sample size. For sample sizes n_1=4, n_2=16, and n_3=64
-#   generate a random sample, and compute its sample `mean`. Do this in three lines, one for each
-#   sample size.
-# * Compare the three means - what would you expect to see?
-
-
-
-
-sample(disch, 4)
-sample(disch, 4) ## unsurprisingly different
-
-mean(sample(disch,4))
-mean(sample(disch,16))
-mean(sample(disch,64))
-
-## potentially quite different values. We would expect the mean of these means to be mu,
-## so the values should be centred about mu but its difficult to say more with only a few points
-
-
-
-
-
-# We will be performing a repeated sampling experiment where we repeat the sampling many times
-# to generate different samples each time. Then we can use the many samples to produce many 
-# different sample means, which we can explore to check their behaviour against what we would
-# expect from the theory seen in lectures.
-
-#
-#
-# 2. Functions and Loops
-# ==================================================================================
-#
-#
-# To simplify the repeated sampling calculation, we will use a loop to repeat the calculations
-# and we will write our own function to take care of the calculations we wish to perform during 
-# each iteration.
-
-
-#
-# 2.1 Functions
+# 2.1 Simulating a jury
 # ----------------------------------------------------------------------------------
 # 
-# As with other programming languages (such as Python), we can combine multiple commands in `R` 
-# into our own custom functions that perform more complicated tasks or calculations. Throughout
-# the year, we will be writing our own functions to solve specific problems and today we will learn
-# the basic syntax of how to create a function.
+# 
+# We're going to approach the problem as follows:
+#   
+# * Let $X_i$ be one of the $n=100$ potential jurors in the panel 
+# * Then $X_i=1$ if that juror is Black and $X_i=0$ otherwise
+# * The jury panel comprises $n=100$ individuals are selected at random and 
+#   representatitvely from the population.
+# * Thus we assume that $X_i$ is drawn from a distribution where $P[X_i=1]=0.26$ to 
+#   represent the 26% of eligible Black people in the local population.
+# * $10$ people from the 100-person jury panel are then selected to be on the trial
+#   jury.
+# 
+# Under these assumptions, we can *simulate* or *randomly generate* possible jury 
+# panels consistent with random selection from this population. If the panel were 
+# truly selected at random then our simulated results should be close to those 
+# observed in Swain's case. If the results of our simulation are not consistent 
+# with the composition of the panel in the trial, that will be evidence against 
+# our model assumptions (ie the model of random selection) and potential evidence
+# of bias. 
+# 
+# To begin with, we will simulate a jury using the `sample` function:
+
 
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # ^ TECHNIQUE: 
 # ^ 
-# ^ When creating a new function, it needs to have a name, probably at least one argument 
-# ^ (although it doesn’t have to), and a body of code that does something. At the end it usually
-# ^ should (although doesn’t have to) return a value or object out of the function. 
+# ^ The `sample` function allows us to take a sample of a specified size from a 
+# ^ vector of values which is treated as the population. The sample function has the
+# ^ following syntax, which you can find by typing `?sample`:
+# ^ 
+# ^ `sample(x, size, replace = FALSE, prob = NULL)`
+# ^ 
+# ^ The arguments to this function are:
+# ^   
+# ^   * `x` a vector of values representing the population to be sampled
+# ^   * `size` the size of sample to take - in our case this is $n$
+# ^   * `replace` - whether to sample with replacement (`TRUE`) or not (`FALSE`)
+# ^   * `prob` - a vector of probabilities for the selection of each element of `x`. 
+# ^      If probabilities aren't specified here, then the elements of `x` are assumed 
+# ^      equally likely.
+# ^ 
+# ^ Note that the arguments `replace` and `prob` are given default values of `FALSE`
+# ^ and `NULL`. This means that if we don't specify a value, R will assume they take
+# ^ the defaults specified in the function definition.
+# ^ 
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+# * Use the `sample` function to:
+#   * Take a sample of size $n=100$
+#   * From a population of $[0,1]$ values
+#   * With a probabilities $[0.74,0.26]$
+#   * Using replacement
+#   * _Hint:_ last time we saw we can use the `c` function to create vectors from two or more constants.
+
+
+sample(c(0,1), 100, replace=TRUE, prob=c(0.74,0.26))
+
+
+
+
+
+
+
+
+
+
+
+# Your code should return a vector of length 100, that will look something like the one below.
+# 
+# [1] 0 0 1 0 0 0 1 0 0 1 0 0 0 1 0 0 0 0 0 1 0 0 1 0 0 0 1 0 0 0 0 0 0 0 1 0 1 1 0 1 0 1 1 0 1 0 0 0 1 0 0 0 0 0 1
+# [56] 1 1 0 0 0 1 1 0 0 0 0 1 1 0 1 0 0 0 0 0 0 1 0 1 0 1 0 1 0 0 0 0 0 0 0 1 1 0 1 0 0 0 0 0 1
+
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+# * What do the values $0$ and $1$ represent?
+# * Re-run your code from the previous exercise, but now save it as a variable `x`
+# * Compute the `sum` of the elements of `x` to find out how many Black jurors would be in your simulated jury pool.
+# * Are you close to the value of $8$ that was seen in the Swain case?
+# * How would you modify your code to compute the proportion of Black jurors in the panel?
+  
+
+## 1= a Black juror, and 0=otherwise
+x <- sample(c(0,1), 100, TRUE, c(0.74,0.26))
+sum(x)
+## the sum will be different for each sample, but it will be very unlikely that you get a value close to 8!
+
+
+
+
+
+
+
+
+
+#
+# 2.2 Using a function to repeat your calculations
+# ----------------------------------------------------------------------------------
+# 
+# 
+# As with other programming languages (such as Python), we can combine multiple 
+# commands in `R` into our own custom functions that perform more complicated tasks
+# or calculations. Throughout the year, we will be writing our own functions to 
+# solve specific problems and today we will learn the basic syntax of how to create
+# a function.
+
+
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^ 
+# ^ When creating a new function, it needs to have a name, probably at least one 
+# ^ argument (although it doesn’t have to), and a body of code that does something. 
+# ^ At the end it usually should (although doesn’t have to) return a value or object
+# ^ out of the function. 
 # ^ 
 # ^ The general syntax for writing your own function is
 # ^ 
-# ^    name.of.function <- function(arg1, arg2, arg3=2) {
-# ^       # function code to do some useful stuff
-# ^       return(something) # return value 
-# ^    }
+name.of.function <- function(arg1, arg2, arg3=2) {
+  # function code to do some useful stuff
+  return(something) # return value 
+}
 # ^ 
-# ^  + `name.of.function`: is the function’s name. This can be any valid variable name, but you 
-# ^     should avoid using names that are used elsewhere in R, such as `mean`, `function`, 
-# ^     `plot`, etc.
-# ^  + `arg1`, `arg2`, `arg3`: these are the arguments of the function. You can write a 
-# ^     function with any number of arguments, or none at all. These can be any _R_ object: numbers,
-# ^     strings, arrays, data frames, or even other functions. Essentially, this is the list of 
-# ^     everything that is needed for the `name.of.function` function to run.
-# ^     Some arguments have default values specified, such as `arg3` in our example, which is set to
-# ^     `2` unless otherwise specified. Arguments without a default must have a value supplied for 
-# ^     the function to run. You do not need to provide a value for those arguments with a default 
-# ^     as they are considered as optional, and when omitted the function will simply use the default
-# ^     value in its definition.
-# ^  + Function body: The function code between the within the `{}` brackets is run every time the
-# ^    function is called. Note that unlike Python where the code _inside_ the function is _indented_,
-# ^    with `R` the code inside the function must be enclosed in curly braces `{}`. This code might
-# ^    be very long or very short. Ideally functions are short and do just one thing – problems are 
-# ^    rarely too small to benefit from some abstraction. Sometimes a large function is unavoidable,
-# ^    but usually these can be in turn constructed from a number of small functions. 
-# ^  + Return value: The last line of the code is the value that will be returned by the function. 
-# ^    It is not necessary that a function return anything, for example a function that makes a plot
-# ^    might not return anything (and so either state `return()` or omitting the `return` statement
-# ^    entirely), whereas a function that does a mathematical operation might return a number, or a 
-# ^    vector.
+# ^ + name.of.function: is the function’s name. This can be any valid variable name,
+# ^   but you should avoid using names that are used elsewhere in R, such as `mean`, 
+# ^   `function`, `plot`, etc.
+# ^ + arg1, arg2, arg3: these are the arguments of the function. You can write a 
+# ^   function with any number of arguments, or none at all. Essentially, this is the
+# ^   list of everything that is needed for the `name.of.function` function to run.
+# ^   Some arguments have default values specified, such as `arg3` in our example, 
+# ^   which is set to `2` unless otherwise specified. Arguments without a default 
+# ^   must have a value supplied for the function to run. You do not need to provide
+# ^   a value for those arguments with a default as they are considered as optional,
+# ^   and when omitted the function will simply use the default value in its definition.
+# ^ + **Function body**: The function code between the `{}` brackets is run every 
+# ^   time the function is called. Note that unlike Python where the code _inside_ 
+# ^   the function is _indented_, with `R` the code inside the function must be 
+# ^   enclosed in curly braces `{}`. 
+# ^ + **Return value**: The last line of the code is the value that will be returned
+# ^   by the function.  It is not necessary that a function return anything, for 
+# ^   example a function that makes a plot might not return anything (and so either 
+# ^   state `return()` or omitting the `return` statement entirely), whereas a function 
+# ^   that does a mathematical operation might return a number, or a vector.
+# ^
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 # For example, we can write a function to compute the sum of squares of two numbers as
-
 sum.of.squares <- function(x,y) {
   return(x^2 + y^2)
 }
@@ -184,442 +245,387 @@ sum.of.squares <- function(x,y) {
 sum.of.squares(3,4)
 
 
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+# * Write a function called `simulatePanel` which has no arguments, simulates a 
+#   100 person jury panel, and returns the number of Black jurors it contains.
+#
+
+"simulatePanel" <- function(){
+  x <- sample(c(0,1), 100, TRUE, c(0.74,0.26))
+  return(sum(x))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^ 
+# ^ `replicate` is a function that repeatedly executes a fragment of code (an 
+# ^ *expression*) a certain number of times. The function and the number of times
+# ^ its called are its two arguments:
+# ^   
+# ^ `replicate(n, expr)`
+# ^ 
+# ^ evaluates the code `expr` repeatedly `n` times. For example, the following line
+# ^ of code will print `"Hello World"` to the console ten times:
+# ^   
+    replicate(10, print("Hello world"))
+# ^ 
+# ^ If the expression `expr` returns a value, then `replicate` combines the results
+# ^ together and returns them as a single object. 
+# ^ 
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 
 #
 # Exercise:
 # ~~~~~~~~~~~~~
-# 
-# * Create a function called `MyFun` that takes a single argument `x` and returns the 
-#   value of 1 + x + 0.1 x^2.
-# * Use your function to evaluate 1+x+0.1x^2 when x=0.
-# * Create a vector of the integers from 0 to 100, and evaluate 1+x+0.1x^2 for x=0,...,100. 
-#   You should do this in one line without resorting to any loops or iterative methods, or 
-#   temporary variables.
-#   _Hint:_ See the previous practical for how to create vectors of integer sequences, and how
-#           to do arithmetic with vectors.
-# * Create another function called `MyFunPlotter`, which takes a single argument `x`, and which
-#   draws a scatter`plot` of the points `(x, MyFun(x))`. Evalate your function for x=0,...,100.
-#   _Hint:_ See the previous practical for how to draw scatterplots, and use your function from 
-#           the previous part of the question.
+# * Use `replicate` with your `simulatePanel` function to simulate the number of 
+#   Black jurors on 5000 simulated jury panels. Save the results to a variable 
+#   called `panels`.
+# * What does each number in the vector `panels` represent?
+# * Draw a `hist`ogram of `panels` - how does this compare to the observation of $x=8$?
+
+    
+panels <- replicate(5000, simulatePanel())
+ist(panels)
+# x=8 was off the bottom of my histogram - so it doesn't look very likely 
+    
 
 
 
-MyFun <- function(x){
-  return(1+x+0.1*x^2)
-}
 
-MyFun(0)
-
-MyFun(0:100)
-
-MyFunPlotter <- function(x){
-  plot(x=x,y=MyFun(x))
-}
-
-MyFunPlotter(0:100)
 
 
 
 
 #
-# 2.2 Simple Loops
+# 2.3 Using a binomial distribution
 # ----------------------------------------------------------------------------------
 # 
 # 
-# A "loop"" is a way to repeat a sequence of instructions under certain conditions. They allow
-# you to automate parts of your code that are in need of repetition. We will look at two ways 
-# of creating loops in our code: 
+# A different (and simpler) way of viewing this problem is to recognise that we 
+# have  all of the conditions for a binomial distribution here. If we let the
+# number of Black jurors on the 100-person panel be $X$, then if we're sampling 
+# independently and randomly with fixed $p=0.26$, then we should have that 
+# X ~ Bin(100, 0.26).
 # 
-# * Traditional loops which execute for a prescribed number of times, as controlled by a counter
-#   or an index, incremented at each iteration cycle are represented as `for` loops in _R_. You will
-#   probably have seen these before with Python.
-# * Loops that take a function and apply that function to every element of a vector (or other array)
-#   are represented by the various `apply` functions in _R_.
-
+# As you might expect from statistical software, R can directly generate random 
+# numbers from common distributions such as the binomial.
 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # ^ TECHNIQUE: 
+# ^
+# ^ The `rbinom` function allows us to generate random observations from a 
+# ^ binomial distribution. Its syntax is
 # ^ 
-# ^ In _R_ a "for"  loop takes the following general form:
+# ^ rbinom(n, size, prob)
 # ^ 
-# ^    for (variable in sequence) { 
-# ^      ## code to repeat goes here
-# ^    }
-# ^ 
-# ^ where `variable` is a name given to the iteration variable and which takes each possible value
-# ^ in the vector `sequence` at each pass through the loop.
+# ^ The arguments to this function are:
+# ^   
+# ^  * n - how many random numbers to generate. Note this is not the binomial sample size parameter n!
+# ^  * size - the $n$ parameter of the binomial distribution to use
+# ^  * prob - the probability of success p.
 # ^ 
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# Here is a quick trivial example, printing the square root of the integers one to ten:
-
-for (x in 1:10) {
-  print(sqrt(x))
-}
+    
 
 #
 # Exercise:
 # ~~~~~~~~~~~~~
-# 
-# * Sometimes big loops aren't necessary! Write a single line of code that computes the square root 
-#   of the integers 1 to 10 without using `for`. 
-# * Use a `for` loop to:
-#    * Print the values of the integers $1$ to $5$.
-#    * Print the squares of the integers from $10$ to $3$.
-#    * Print your first name 10 times.
+# * How would you use the `rbinom` function to simulate $X$, the number of Black 
+#    jurors in a jury panel of 100 individuals?
+# * How would you modify your code to simulate 5000 values of $X$? 
 
+    
+    
+rbinom(1, 100, 0.26)
 
-sqrt(1:10) ## use a vector instead
-
-for(i in 1:5){
-print(i)
-}
-
-for(i in 10:3){
-print(i^2)
-}
-
-for(i in 1:10){
-print("My Name")
-}
-
-
-
-
-# While `for` loops are helpful when we need to explictly repeat a block of code, sometimes we
-# just want to apply the same function (or calculations) to all of the elements of a vector. We
-# can use `for` to do this, but _R_ provides a function which does exactly that - `sapply`. 
-
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ `sapply` applies a specified function to every element of a vector and returns a vector formed
-# ^ from the results.
-# ^ 
-# ^ sapply(X, FUN)
-# ^ 
-# ^ applies the function `FUN` to every element of the vector `X` it then returns a vector containing
-# ^ the values of `FUN(X[1])`, `FUN(X[2])`, and so on. 
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# So, to replicate the square-root example above using `sapply`, we would write
-
-sapply(1:10, FUN=sqrt)
-
-# or alternatively
-
-sapply(1:10, FUN=function(i){sqrt(i)})
-
-# which applies the square root function to each of the integers 1 to 10. Unlike a loop, `sapply`
-# automatically returns its results as a vector without us having to write code for that (our 
-# `for` loop above only printed the values). 
-
-# There are other variations of `apply` which work with matrices and other data structures, and we 
-# will see those later.
-
-# If we combine this technique of looping with the ability to write our own functions, then we have
-# a very flexible way of re-writing a standard loop in a vectorised way. In general, using the 
-# `sapply` function is to be preferred to a `for` loop particularly when we want to keep the results
-# of the calculations from each iteration. However, `for` loops are still useful and more natural in
-# certain cases (where we do not want the output values, or where each iteration has a dependency on
-# the calculations at the previous step).
-
-
+panels <- rbinom(5000, 100, 0.26)
+    
+    
+    
+    
+    
+    
+#
+# 2.4 Exploring the results
+# ----------------------------------------------------------------------------------
+#      
+# We've now randomly simulated a large number of potential jury panels consistent 
+# with this area in Alabama. Let's do a little statistical analysis on our results.
+# You can use either the results from your own function or `rbinom` - it shouldn't
+# matter which.
 
 #
 # Exercise:
 # ~~~~~~~~~~~~~
+# * Compute the `mean` and `var`iance of your simulated Xs.
+# * If X ~ Bin(100, 0.26) what are the theoretical mean and variance of X? 
+#     Do these values agree with your simulations?
+# * Does the simulated distribution of X the values appear to be consistent 
+#    with the observation x=8?
+
+
+
+
+mean(panels)
+var(panels)
+## For X ~ Bin(n,p), we would expect a mean of np and variance of np(1-p)
+100*0.26 # theoretical mean is 26
+100*0.26*0.74 # and variance is 19.26
+## Depending on your sample, you'll likely be reasonably close to the theory with the sample mean and variance
+
+## there are various ways to answer the final question. One is to see how many standard deviations x=8 is from the
+## mean of the distribution
+(8-mean(panels))/sd(panels)
+## I got 4, which would suggest x=8 is particularly unlikely if this were a distribution like a Normal.
+##
+## More specifically, you could use the Normal distribution and directly compute the probability.
+## For me, I got a probability of 0.00002 of observing X<=8 - again this seems very unlikely
+
+    
+ 
+    
+       
+
+    
+#
+# Exercise:
+# ~~~~~~~~~~~~~    
+#
+# * What distribution would make a good approximation to that of X? Hint:
+# we're summing a large number of independent random variables.
+# * Re-draw/go back to your`hist`ogram of the values of $X$. Does the shape of 
+# the histogram agree with your expectation?
+
+    
+    
+    
+# CLT (or normal approximation to binomial) => we'd expect a Normal distribution
+hist(panels)
+# This looks pretty Normally distributed to me
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+# Let's add the observed value of x=8 for reference. To do this, we will likely 
+# need to modify our x-axis to have a larger range to ensure that 8 is visible 
+# within the plot range, and learn how to add lines to an existing plot.
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^
+# ^ To control the ranges of the horizontal and vertical axes, we can add the 
+# ^ xlim and ylim arguments to our original plotting command. To set the horizontal
+# ^ axis limits, we pass a vector of two numbers to represent the lower and upper
+# ^ limits, xlim = c(lower, upper), and repeat the same for `ylim` to customise
+# ^ the vertical axis. For example,
+# ^ 
+    plot(x=1:10, y=1:10, xlim=c(-10,10), ylim=c(0,20))
+# ^ 
+# ^ We don't have to specify axis limits, and when omitted R will figure out something 
+# ^ sensible for us.
+# ^  
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~    
+#
+# * Re-draw your histogram using $x$ axis limits that go from 0 up to 50.
+
+    
+hist(panels, xlim=c(0,50))
+    
+    
+    
+    
+    
+    
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^
+# ^ It is often useful to add simple straight lines to lines to plots, which can be
+# ^ achieved using the `abline` function. `abline` can be used in three different ways:
+# ^   
+# ^   + Draw a horizontal line: pass a value to the `h` argument, `abline(h=3)` draws
+# ^     a horizontal line at y=3
+# ^   + Draw a vertical line: pass a value to the `v` argument, `abline(v=5)` draws
+# ^     a vertical line at x=5
+# ^   + Draw a line with given intercept and slope: pass value to the `a` and `b` 
+# ^     arguments representing the intercept and slope respectively; `abline(a=1,b=2)` 
+# ^     draws the line at y=1+2x
+# ^   
+# ^ `abline` can be customised using any of the usual colour and line modifications 
+# ^ using colour, line types and widths .
+# ^ 
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+    
+#
+# Exercise:
+# ~~~~~~~~~~~~~    
+#
+# * Add a vertical line at $x=8$ to represent the observation in the Swain jury
+#     selection case.
+# * You can also customise your axis labels to be more readable - see the online help
+#     for details.
+# * You can customise your line (and your histogram) using colour:
+# * Read the online help page on using colour in plots and experiment with redrawing
+#     your histogram and vertical line using some custom colour.
+# * What do you conclude about the plausibility of observing $x=8$ at random from
+#     this population?
+
+
+
+abline(v=8,col='red')
+## x=8 appears to be far out in the tail of the distribution, which agrees with our previous statements.
+
+    
+    
+    
+    
+    
+
+
+# You should end up with a plot that looks a little like the one on the webpage.
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~    
+#
+# * Without using the normal distribution, how would you use your simulations to estimate P[X <= 8]?
+#   * *Hints*:
+#   * Think about how you might determine how many of your simulated jury panels have 8 or fewer Black jurors?
+#   * You can use the `<=` operator to test every element of a vector.
+#   * `sum` will treat all the values of `TRUE` in a vector as `1` and `FALSE` as `0`
+#   * You may need to make many more simulations to get a non-zero estimate.
+#   * Ask for help if you're stuck!
+#
+
+    
+    
+panels<=8 ## this gives me a load of FALSE/TRUE values
+sum(panels<=8) ## sum will "add up" the values with FALSE=0 and TRUE=1
+## this gave me zero, so let's increase the number of simulations to a million!
+sum(rbinom(1e6, 100, 0.26)<=8)
+# this gave me 3, so our estimate for the probability would be
+3/1e6    
+# you will need even more simulations to produce a reliable estimate of this probability
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+# This is evidence that the model of random selection of the jurors in the panel
+# is not consistent with the data from the panel. While it is possible that the 
+# panel could have been generated by chance, our simulation demonstrates that it
+# is hugely unlikely.
 # 
-# * Use `sapply` to re-write your for-loops. You should write your answers in one line of code for
-#   each part:
-#    * Return the values of the integers 1 to 5.
-#    * Return the squares of the integers from 10 to 3.
-#    * Return a vector of your first name 10 times.
-
-
-
-sapply(1:5, FUN=function(i) { i })
-
-sapply(10:3, FUN=function(i) { i^2 })
-
-sapply(1:10, FUN=function(i) { 'My Name' })
-
-
+# The reality of the trial panel is very much at odds with the model’s assumption
+# of random selection from the eligible population. When the data and a model are
+# inconsistent, then the model is hard to justify. After all, the data are real 
+# but the model is just a set of assumptions. When assumptions are at odds with 
+# reality, we must question those assumptions.
+# 
+# Therefore the most reasonable conclusion is that the either the proportion of 
+# eligible Black jurors was far smaller than stated or the assumption of random 
+# selection is unjustified for this jury panel. As the proportion was not in doubt,
+# the most reasonable conclusion is that the jury panel was not selected by random
+# sampling from the population of eligible jurors. Notwithstanding the opinion of 
+# the Supreme Court, the difference between 26% and 8% is not so small as to be 
+# explained well by chance alone.
 
 
 
 
 #
 #
-# 3. The Sampling Experiment
+# 3. Further Exercises:
 # ==================================================================================
 #
-
-#
 # Exercise:
-# ~~~~~~~~~~~~~
-# 
-# * Make a vector of the means of 30 different samples of size 4 from the hospital discharges
-#   vector using a combination of `sapply` and the functions `sample` and `mean`.
-# * Create a new function with argument `n` that returns a vector of the means of 1000 samples,
-#   each of size `n`, from the discharges data. 
-#   _Hint:_ This is a one line function that places a version of the command used in the previous
-#   question within the function.
-# * Using your new function, create three vectors containing the means for 1000 samples of sizes
-#   $n_1=4$, $n_2=16$ and $n_3=64$ from the discharges data (giving each a name).
-
-
-
-
-sapply(1:30, FUN=function(i) {  mean(sample(disch, 4)) } )
-
-dischSample <- function(n){
-  return(sapply(1:1000, FUN=function(i) {  mean(sample(disch, n)) } ))
-}
-
-means4 <- dischSample(4)
-means16 <- dischSample(16)
-means64 <- dischSample(64)
-
-
-
-# We now have samples of size 1000 from each of three sampling distributions of Xbar, for
-# when n=4, n=16, n=64. As our samples of Xbar values are quite large in size, we might
-# expect that each of these distributions is quite similar to the distribution of the underlying 
-# theoretical population of sample means.
-
+# ~~~~~~~~~~~~~    
 #
-# Exercise:
-# ~~~~~~~~~~~~~
-# 
-# * Find the mean and standard deviation for each collection of sample means. Do the results
-#   agree with what you would expect?
-# * Draw a `boxplot` comparing each of the three samples on the same scale. (_Hint_: see the 
-#   previous practical for how to draw a boxplot.)
-
-
-
-mean(means4)
-sd(means4)
-
-mean(means16)
-sd(means16)
-
-mean(means64)
-sd(means64)
-
-boxplot(means4, means16, means64)
-
-
-
-
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ _R_ makes it easy to combine multiple plots into one overall graph, using either the `par` or
-# ^ `layout` functions.
-# ^ 
-# ^ With the `par` function, we specify the argument `mfrow=c(nr, nc)` to split the plot window 
-# ^ into a grid of nr x nc plots that are filled in by row. For example, to divide the plot window 
-# ^ into a 2x2 grid we call
-# ^ 
-# ^ par(mfrow=c(2,2))
-# ^ 
-# ^ This has no immediate effect, but the next four plots drawn (using `plot`, `hist`, `boxplot`, etc)
-# ^ will be drawn in the 2x2 grid.
-# ^ 
-# ^ To revert to a single plot layout, we ask for a 1x1 grid via `par(mfrow=c(1,1))`.
-# ^ 
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-#
-# Exercise:
-# ~~~~~~~~~~~~~
-# 
-# * Use the `par` function with the `mfrow` argument to configure to plot window for a column of
-#   three vertical plots.
-#   _Note:_ this function will have no effect until you start drawing new plots.
-# * Plot the samples of $\bar{X}$ as separate histograms, one on top of the other. Make sure the
-#   horizontal axes are the same. 
-#   _Hint:_ use the `xlim` argument to specify the horizontal axis limits, and `range` will determine
-#   the min and max of a vector.
-
-
-
-
-
-par(mfrow=c(3,1))
-
-hist(means4, xlim=range(means4))
-hist(means16, xlim=range(means4))
-hist(means64, xlim=range(means4))
-
-
-
-
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ It is often useful to add simple straight lines to lines to plots, which can be achieved
-# ^ using the `abline` function. `abline` can be used in three different ways:
-# ^   
-# ^ + Draw a horizontal line: pass a value to the `h` argument, `abline(h=3)` draws a horizontal
-# ^   line at y=3
-# ^ 
-# ^ + Draw a vertical line: pass a value to the `v` argument, `abline(v=5)` draws a vertical 
-# ^   line at x=5
-# ^ 
-# ^ + Draw a line with given intercept and slope: pass value to the `a` and `b` arguments
-# ^   representing the intercept and slope respectively; `abline(a=1,b=2)` draws the line y=1+2x
-# ^   
-# ^ `abline` can be customised using any of the usual colour and line modifications using colour
-# ^ (`col`), and line types and widths (`lty`, and `lwd`) - refer to the Advanced Plots help page
-# ^ http://www.maths.dur.ac.uk/stats/people/jac/sc2-practicals/r_8_advplots.htm
-# ^   
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-#
-# Exercise:
-# ~~~~~~~~~~~~~
-# 
-# * Redraw your histograms, this time adding a vertical line showing the population mean.
-
-
-par(mfrow=c(3,1))
-
-hist(means4, xlim=range(means4))
-abline(v=mean(disch),col='red')
-hist(means16, xlim=range(means4))
-abline(v=mean(disch),col='red')
-hist(means64, xlim=range(means4))
-abline(v=mean(disch),col='red')
-
-
-# According to theory seen in lectures, the sample mean is an unbiased estimator of the 
-# population mean, mu, and has variance denoted sigma_Xbar. For Normal data or large 
-# sample sizes, the sampling distribution is either exactly or approximately Normal with the above
-# mean and variance.
-
-
-#
-# Exercise:
-# ~~~~~~~~~~~~~
-# 
-# * What do you observe about the three distributions? Does the picture correspond to the theory?
-# * What do you notice about the mean and standard deviation of your samples relative to the 
-#   population for the three different sample sizes.
-
-
-
-
-
-## distributions are all centred about mu (as they should be since Xbar is unbiased)
-## spread decreases with sample size (due primarily to the 1/n term in the variance of Xbar)
-## the distribution looks "more Normal" as n gets bigger (central limit theorem)
-
-
-
-#
-#
-# 3. The variance of the sample mean
-# ==================================================================================
-#
-
-# We can use `R` to investigate the properties of the distribution of the sample mean more
-# closely. The theory tells us that the variance of the sample mean, Xbar, for a sample
-# of size n from a _finite_ population of size N is given by:
-# 
-#                                  (N − n)   sigma^2
-#       Var[Xbar] = sigma^2_Xbar = -------   -------  .
-#                                  (N - 1)      n
-#
-#  where sigma^2 is the population variance of the original data, X. An unbiased estimator 
-# of this standard error is the estimated standard error, given by
-#
-#                  (     n )  s^2
-#       S^2_Xbar = ( 1 - - )  ---   .
-#                  (     N )   n
-#
-# where $s^2$ is the sample variance.
-
-#
-# Exercise:
-# ~~~~~~~~~~~~~
-# 
-# * Calculate the true variance of the sample mean, sigma^2_Xbar for the samples of 
-#   size 4, 16 and 64.
-# * Write a new function with argument `n` that returns a vector of 1000 realisations 
-#   of S^2_Xbar for samples of `n` from the discharges data. 
-# * Evaluate your function for n=4, n=16, and n=64 and store the result to three variables.
-# * Display each of these three samples as histograms, one on top of the other in the same
-#   plot. Make sure the horizontal axes are the same.
-# * Draw a vertical line on each one showing the location of the true variance of the 
-#   sample mean in each case.
-# * Is the result of this experiment consistent with the theory? Why?
-
-
-
-## Careful with this step, as using `var` on the discharges vector uses the sample variance formula which 
-## assumes the sample mean is not mu and which divides by (c-1). We need the population variance as 
-## mean(disch)=mu since this is our population, and we want to divide by N. So either we need to correct the
-## output from var, or compute sigma^2 directly. 
-
-N <- length(disch)
-
-sigma2 <- sum((disch-mean(disch))^2)/N
-## or multiply S^2 by (N-1) and divide by N
-sigma2 <- (N-1)/N * var(disch)
-
-## compute sigma_xbar for n=4,16,64 - we should probably do this with a function!
-trueV4 <- (N-4)/(N-1) * sigma2/4
-trueV16 <- (N-16)/(N-1) * sigma2/16
-trueV64 <- (N-64)/(N-1) * sigma2/64
-
-## easiest to do this with a new function to compute S^2_Xbar for a given sample
-S2Xbar <- function(x){
-  n <- length(x)
-  return( (1-n/N)*var(x)/n)
-}
-## then just swap `mean` for `S2Xbar` from our previous sampling function
-dischVariances <- function(n){
-  return(sapply(1:1000, FUN=function(i) {  S2Xbar(sample(disch, n)) } ))
-}
-
-vars4 <- dischVariances(4)
-vars16 <- dischVariances(16)
-vars64 <- dischVariances(64)
-
-
-par(mfrow=c(3,1))
-
-hist(vars4, xlim=range(vars4))
-abline(v=trueV4,col='red')
-hist(vars16, xlim=range(vars4))
-abline(v=trueV16,col='red')
-hist(vars64, xlim=range(vars4))
-abline(v=trueV64,col='red')
-
-
-
-
-                                                                                                         
-
-
-
-
-
-
-
-
-
-
-
-
+# * How would you use the techniques above to simulate the selection (without 
+#   replacement) of 10 trial jurors from the 100-person jury panel? Do your results
+#   indicate whether it is plausible to obtain no Black jurors purely at random?
+# * Link up your two simulations! First simulate the selection of a representative
+#   100-person panel using `rbinom`, and then use your simulated panel to `sample`
+#   a simulated trial jury without replacement. Revisit your analysis to see 
+#   whether this affects your conclusions.
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 

@@ -316,68 +316,36 @@ a = 2
 
 
 #
-# 3.  The `durham` library
+# 3.  Loading data
 # ==================================================================================
 # 
 #
-# If you're using your own computer, then follow the installation instructions on
-# the worksheet to install a copy of the `durham` package.
+# Most real data will have to be imported into `R` from an external data file, or 
+# will be provided by a library or # package. For these practicals, we have already 
+# tidied and processed the data, so we just need to load the data file.
 
-# If you're using a University computer, then the package should be installed on 
-# the network but you need to complete the following steps to recognise it:
-  
-#  * Open the Windows File Explorer
-#  * Then navigate "Computer" -> T: -> MATHS -> R
-#  * Double-click "Setup R for Maths"
-#  * If you already have R or Rstudio open, you should now close it and reopen it.
+## Go to the webpage worksheet and download the hospital data file!
 
-#  **Note:** You will only need to do this once, and you will not need to do this 
-#     if you are running R on your own computer. 
+# First, right-click and save the data from the link above to the same place as 
+# your practical script file. Then you can load the file by any of the following 
+# methods (in descending order of difficulty):
+#  
+#  * dragging and dropping it into the Console panel of Rstudio
+#  * locating it using the Files panel of Rstudio and then clicking on the file
+#  * or with the `load` function and give it the path to the file as an argument
 
-# Now, to load the `durham` libarary, we use the `library` function and specify the library we want:
+#This will create a `hospital` data set object in R for you to use in the following. 
 
-library(durham)
-
-# There are many datasets in this library - to see names of them all type 
-
-data(package ='durham')
-
-# For the rest of this practical, we’ll be working with the dataset called `hospital`. To load a 
-# particular data set from a package that we have alreaded loaded with `library`, we use the `data` function:
-
-data(hospital)
-
-# You should now view the data either in the console by typing
+#You should now view the data either in the console by typing
 
 hospital
 
-
-# or to show it in a spreadsheet layout use the `View` function:
+#or in a spreadsheet layout with the `View` function:
 
 View(hospital)
 
-# Have a look at the help page using `?`  to learn about this data set. 
-
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ IF YOU HAVE PROBLEMS WITH THE LIBRARY
-# ^ 
-# ^ If you have problems with any of the above steps, then you can use the link on 
-# ^ the worksheet to download the data directly without the library.
-# ^ 
-# ^ Download the data from the link. Then you can load the file by any of the 
-# ^ following methods:
-# ^   
-# ^   * dragging and dropping it into the R console panel of Rstudio
-# ^   * locating it using the Files panel of Rstudio and clicking
-# ^   * or with the `load` function by specifying the file location.
-# ^ 
-# ^ This will create the `hospital` data set object in R for you to use in the 
-# ^ following. 
-# ^ 
-# ^ Note that the help function (`?`) will not work with data loaded in this way.
-# ^ 
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# To see a brief description of the data set and its variables, see the help page
+# linked on the webpage.
 
 
 

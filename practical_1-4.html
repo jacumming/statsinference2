@@ -11,10 +11,10 @@
 
 
 
-<title>Practical 1-4: Bayesian Inference</title>
+<title>Practical 1-4: Bayesian analysis of Poisson data</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
-<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -37,6 +37,8 @@
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
 <link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+<script src="site_libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="site_libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
 <style type="text/css">
   code{white-space: pre-wrap;}
@@ -57,6 +59,7 @@ if (window.hljs) {
   }
 }
 </script>
+
 
 
 
@@ -86,6 +89,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -143,11 +149,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -176,8 +186,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -185,16 +195,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -311,12 +314,12 @@ div.tocify {
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -328,7 +331,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 1
      
     <span class="caret"></span>
@@ -349,7 +352,7 @@ div.tocify {
   </ul>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 2
      
     <span class="caret"></span>
@@ -382,7 +385,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-question-circle"></span>
      
     R Help
@@ -438,358 +441,838 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Practical 1-4: Bayesian Inference</h1>
+<h1 class="title toc-ignore">Practical 1-4: Bayesian analysis of Poisson
+data</h1>
 
 </div>
 
 
-<!-- In this practical we use R to investigate the conjugate Bayesian analysis for Poisson data. We will also investigate using the effects of the prior distribution on the posterior, and the situation where our sample size grows large. -->
-<!--  *  [Download the R Script](scripts/practical_2-5.R) - right click, and Save As -->
-<!-- ```{block2, type='goals'} -->
-<!--  *  You will need the following skills from previous practicals: -->
-<!--     *   Creating vectors with `seq` -->
-<!--     *   Drawing functions with `plot`, and with `lines` -->
-<!--     *   Using additional graphical parameters to customise plots with colour (`col`), line type (`lty`), axis range (`xlim` and `ylim`) etc -->
-<!--     *   Adding simple straight lines to plots with `abline` -->
-<!--     *   Writing your own functions with `function` -->
-<!--     *   Using `sapply` to evaluate a function on every element of a vector -->
-<!--  *  New(ish) R techniques: -->
-<!--     *   Using R's built-in functions to evaluate a standard pdf, e.g. `dgamma` and `dnorm` -->
-<!--     *   Using the quantile functions, e.g. `qgamma`, to produce exact credible intervals using standard distributions  -->
-<!-- ``` -->
-<!-- # The Data -->
-<!-- Our dataset concerns the number of volcanoes that erupted each year from 2000 to 2018, taken from [here](https://volcano.si.edu/faq/index.cfm?question=eruptionsbyyear). The data are given in the table below, where each volcanic eruption is counted in the year that the eruption started. Volcanic eruptions are split into groups depending on the severity of the eruption, as measured on the logarithmically-scaled _Volcanic Explosivity Index_ (VEI). For example, the 2010 eruption of Eyjafjallajökull in Iceland had a VEI of 4, whereas the eruption of Krakatoa in 1883 was VEI6.  -->
-<!-- The eruptions are classified as `Small` (VEI$\leq 2$), `Medium` (VEI $=3$), and `Large` (VEI $\geq 4$). -->
-<!-- ```{r, echo=FALSE, results='hide'} -->
-<!-- volcano <- data.frame(Year = 2000:2018,  -->
-<!--            Small = c(30, 25, 30, 32, 29, 29, 34, 29, 25, 28, 39, 30, 40, 40, 41, -->
-<!--                      26, 37, 30, 34),  -->
-<!--            Medium = c(6, 6, 5, 5, 8, 4, 3, 3, 7, 2, 6, 6, 4, 7, 7, 5, 4, 6, 4), -->
-<!--            Large = c(0, 0, 0, 2, 1, 1, 1, 3, 2, 1, 3, 0, 1, 0, 1, 0, 2, 0, 1)) -->
-<!-- ``` -->
-<!-- ```{r echo=FALSE, results='asis'} -->
-<!-- vtab <- t(volcano) -->
-<!-- library(knitr) -->
-<!-- library(kableExtra) -->
-<!-- kable(vtab[,1:10],"html") %>% -->
-<!--   kable_styling(bootstrap_options = c("striped")) %>% -->
-<!--   column_spec(1, bold = TRUE) -->
-<!-- kable(vtab[,11:19],"html") %>% -->
-<!--   kable_styling(bootstrap_options = c("striped")) %>% -->
-<!--   column_spec(1, bold = TRUE) -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!-- * Run the `R` code below to input the data, and create a new data frame called `volcano`, with columns `Year`, `Small`, `Medium`, and `Large`. -->
-<!-- * `plot` the number of `Small` eruptions against the year using a vertical axis range (`ylim`) of $[0,50]$. Add `lines` of different colours to the same plot for the other two groups of eruptions. Do you see any apparent relationship between time and number of eruptions? -->
-<!-- * Also plot the histogram of the number of `Medium` eruptions - does it look like it could follow a Poisson distribution? How else could you quickly assess this? -->
-<!-- ``` -->
-<!-- ```{r,echo=TRUE,eval=FALSE} -->
-<!-- volcano <- data.frame(Year = 2000:2018,  -->
-<!--            Small = c(30, 25, 30, 32, 29, 29, 34, 29, 25, 28, 39, 30,  -->
-<!--                      40, 40, 41, 26, 37, 30, 34),  -->
-<!--            Medium = c(6, 6, 5, 5, 8, 4, 3, 3, 7, 2, 6, 6, 4, 7, 7,  -->
-<!--                       5, 4, 6, 4), -->
-<!--            Large = c(0, 0, 0, 2, 1, 1, 1, 3, 2, 1, 3, 0, 1, 0, 1,  -->
-<!--                      0, 2, 0, 1)) -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide', fig.show='hide'} -->
-<!-- plot(y=volcano$Smal,x=volcano$Year,ty='l', ylim=c(0,50)) -->
-<!-- lines(y=volcano$Medium,x=volcano$Year, col='blue') -->
-<!-- lines(y=volcano$Large,x=volcano$Year,col='red') -->
-<!-- ## No obvious dependency; looks fairly randomly scattered -->
-<!-- hist(volcano$Medium) -->
-<!-- ## difficult to tel, no strong evidence against -->
-<!-- ## another quick and dirty check is to see if mean=variance, as it must for a Poisson r.v. -->
-<!-- mean(volcano$Medium) -->
-<!-- var(volcano$Medium) -->
-<!-- ## they aren't exactly in agreement, so perhaps a Poisson assumption is a bit shaky.  -->
-<!-- ## The sample size is fairly small however, so we might be okay. -->
-<!-- ``` -->
-<!-- # Conjugate analysis with the Gamma-Poisson model -->
-<!-- ## The Theory -->
-<!-- A Poisson distribution is often used to model the counts of random events occurring within a fixed period of time at some rate $\lambda$. For such a random variable $X$ where $X\sim\text{Po}(\lambda)$ , a Bayesian analysis will require a prior distribution for the unknown Poisson parameter $\lambda$. We have seen/will see (Lecture 16) that the Gamma distribution provides a conjugate prior for this particular problem. Therefore, if our data $X_1,\dots,X_n$ are \iid $\text{Po}(\lambda)$, and our prior distribution for $\lambda$ is $\text{Ga}(a,b)$. Then the posterior distribution for $\lambda ~|~ X_1,\dots,X_n$ is given by: -->
-<!-- \[ -->
-<!--    \lambda ~|~ X_1,\dots,X_n \sim \text{Ga}(a+T, b+n), -->
-<!-- \] -->
-<!-- where $T=\sum_{i=1}^n X_i= n\overline{X}$. -->
-<!-- ## The prior -->
-<!-- ```{r prior} -->
-<!-- ``` -->
-<!-- First, let's use the Gamma distribution to identify an appropriate prior for our Poisson count data.  -->
-<!-- ```{block2, type='technique'} -->
-<!-- `R` provides built-in functions to evaluate the PDF of standard distributions. The density function for a Gamma distribution $\text{Ga}(a,b)$ is used as follows -->
-<!-- `dgamma(x, shape=a, rate=b)` -->
-<!-- where `x` is the point (or vector of points) where we want to evaluate the PDF, and `a` and `b` are the usual Gamma parameter values. -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!-- * Create a vector containing a `seq`uence of 500 equally-space values over the interval $[0,10]$. Call this `lambdavals`. -->
-<!-- * Evaluate the $\text{Ga}(1,1)$ pdf at each of the values of $\lambda$ in `lambdavals` using the gamma PDF `dgamma`. Make a `plot` of the pdf against $\lambda$ as a solid black line. -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide',fig.show='hide'} -->
-<!-- ## values of lambda -->
-<!-- lambdavals <- seq(0,10,length=500) -->
-<!-- ## evaluate the gamma pdf over lambdavals -->
-<!-- plot(x=lambdavals, y=dgamma(lambdavals,1,1),ty='l') -->
-<!-- ``` -->
-<!-- An expert vulcanologist believes that the unknown rate of `Medium` eruptions, $\lambda$, is such that a range of $[1,6]$ would be plausible. -->
-<!-- ```{block2, type='question'} -->
-<!-- * Interpret the expert's given interval as corresponding to a statement of $\text{mean}(\lambda) \pm 2\text{sd}(\lambda)$. Hence, find the mean and variance of the prior.  -->
-<!-- * Equate the prior mean and variance to the theoretical values for the expectation ($a/b$) and variance ($a/b^2$) of a Gamma pdf, and hence find the appropriate values of its parameters $a$ and $b$. -->
-<!-- * Evaluate the expert's prior pdf for $\lambda$ at each of `lambdavals`, and save it as `cnjPrior`. -->
-<!-- * Normalise `cnjPrior` so that its values sum to 1. -->
-<!-- * Produce a fresh plot of the expert's prior pdf for $\lambda$ as a solid red curve. Ensure your vertical axis covers $[0,0.02]$.  -->
-<!-- * Add a vertical red and dashed line (`abline` using the `v` argument) at the location of the prior expectation for $\lambda$. -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide',fig.show='hide'} -->
-<!-- m <- 3.5 -->
-<!-- v <- (2.5/2)^2 # 1 -->
-<!-- ## gamma expectation is a/b, and variance is a/b^2 -->
-<!-- ## so mean/variance = b -->
-<!-- b <- m/v -->
-<!-- ## and then a=mean*b -->
-<!-- a <- m*b  -->
-<!-- ## do the plopt -->
-<!-- cnjPrior <- dgamma(lambdavals,a,b) -->
-<!-- cnjPrior <- cnjPrior/sum(cnjPrior) -->
-<!-- ``` -->
-<!-- ```{r eval=FALSE,echo=FALSE,results='hide'} -->
-<!-- plot(x=lambdavals, y=cnjPrior,ty='l',col='red',ylim=c(0,0.02)) -->
-<!-- abline(v=a/b,lty=2,col='red') -->
-<!-- ``` -->
-<!-- ```{block2, type='technique'} -->
-<!-- In addition to built-in functions for PDFs of standard distributions, `R` also provides the _quantile function_ for a pdf. The quantile function evaluates the inverse of the cumulative distribution function, $F_X^{-1}(u)$. Given a probability value $u\in[0,1]$, the quantile function returns the value $x$ of $X$ for which $P[X\leq x]=u$, and so the quantile functions are particularly useful for finding critical values of distributions and for finding exact credible intervals. -->
-<!-- The quantile function for a Gamma density $X\sim \text{Ga}(\alpha,\beta)$ is used as follows -->
-<!-- `qgamma(alpha, shape=a, rate=b)` -->
-<!-- where `alpha` is the lower tail probability (or vector of lower-tail probabilities) for which we want the corresponding value(s) of $X$, and `a` and `b` are the usual Gamma parameter values. -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!-- * Use the `qgamma` function to find a 95\% equal-tailed prior credible interval for $\lambda$ using the expert's prior distribution above. _Hint:_ find the values of $\lambda$ with lower and upper tail probabilities of $2.5\%$. -->
-<!-- * How does this compare to the expert's original interval? -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide',fig.show='hide'} -->
-<!-- cri <- qgamma(c(0.025, 1-0.025),a,b) -->
-<!-- ## credible interval is a bit narrower [3.24, 7.14] -->
-<!-- ## Why does it differ? The mean +/- 2 sd interval would almost agree with this credible interval -->
-<!-- ## if the prior was Normal, but as it's a Gamma then we should not be surprised to obtain  -->
-<!-- ## something a little different. -->
-<!-- ``` -->
-<!-- ## The likelihood -->
-<!-- ```{r like} -->
-<!-- ``` -->
-<!-- The next ingredient in the Bayesian calculation requires us to capture the information contained in the data via the likelihood. In a Bayesian context, the likelihood is the conditional distribution of the data $X_1,\dots, X_n$ given the parameter $\lambda.$ -->
-<!-- Let's compute the likelihood given our data on `Medium` volcanic eruptions, and add it to the plot. -->
-<!-- ```{block2, type='question'} -->
-<!-- * Write a function `poisLike`  hat computes the Poisson likelihood for the sample of `Medium` volcano eruptions. Your function should: -->
-<!--     *  Take one argument `lambda` -->
-<!--     *  Compute the Poisson probability for each data point in `volcano$Medium` given the value of `lambda`. _Hint_: the `dpois` function evaluates Poisson probabilities for a vector of values `x` and parameter `lambda`. -->
-<!--     *  Combine the probabilities to find the likelihood of the sample, and `return` it. -->
-<!-- * Use `sapply` to evaluate the Poisson likelihood (`poisLike`) for each of the values of $\lambda$ in `lambdavals`. Save this as `like`. -->
-<!-- * Normalise `like` so that its values sum to $1$. -->
-<!-- * Add the likelihood to your plot of the prior distribution as a blue curve. -->
-<!-- * Add the maximum likelihood estimate of $\lambda$ as a vertical dashed blue line. -->
-<!-- _Hint_: You saw an expression for $\widehat{\lambda}$ in Term 1. -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide',fig.show='hide'} -->
-<!-- ## likelihood given lambda -->
-<!-- "poisLike" <- function(lambda){ -->
-<!--   probs <- dpois(volcano$Medium, lambda) -->
-<!--   like <- prod(probs) -->
-<!--   return(like) -->
-<!-- } -->
-<!-- ## likelihood for all of lambdavals -->
-<!-- like <- sapply(lambdavals, poisLike) -->
-<!-- ## normalise -->
-<!-- like <- like/sum(like) -->
-<!-- # summary stats -->
-<!-- T <- sum(volcano$Medium) -->
-<!-- n <- length(volcano$Medium) -->
-<!-- ``` -->
-<!-- ```{r,eval=FALSE,echo=FALSE,results='hide',fig.show='hide'} -->
-<!-- ## add it to the plot -->
-<!-- lines(x=lambdavals, y=like, col='blue') -->
-<!-- ## add the MLE -->
-<!-- abline(v=T/n, col='blue', lty=2) -->
-<!-- ``` -->
-<!-- ## The posterior -->
-<!-- ```{r post} -->
-<!-- ``` -->
-<!-- As we're using the conjugate Gamma prior with a Poisson likelihood, then our posterior distribution for $\lambda$ will also be a Gamma with parameter values as given in Section 2.1. Let's verify that this is the case, and add the resulting density function to our plot. -->
-<!-- ```{block2, type='question'} -->
-<!-- * Directly compute the posterior for $\lambda$ by Bayes theorem, and save these values as `postDirect`. Normalise the `postDirect` so that it sums to $1$. -->
-<!-- _Hint:_ $\text{Posterior} \propto \text{Likelihood} \times \text{Prior}$. -->
-<!-- * Add the posterior to your plot as a solid green curve.  -->
-<!-- * Now use conjugacy to evaluate the conjugate Gamma posterior distribution. -->
-<!--     * First find the posterior values of $a$ and $b$, save these as `aPost` and `bPost`. -->
-<!--     * Now use `dgamma` with the posterior parameter values to evaluate the posterior Gamma density -->
-<!--       at each of `lambdavals`. Save these values to `postConjugate` and normalise to sum to $1$. -->
-<!-- * Draw the conjugate posterior on your plot as a dashed `purple` curve. -->
-<!-- * What do you see? Do the results agree with each other? How has the prior changed? -->
-<!-- * Add the posterior mean as a vertical green line.  -->
-<!-- What do you notice about the relationship between the posterior mean, the prior mean, and the maximum likelihood estimate? -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide'} -->
-<!-- ## directly compute the posterior by Bayes -->
-<!-- postDirect <- cnjPrior * like -->
-<!-- postDirect <- postDirect/sum(postDirect) -->
-<!-- ## evaluate the conjugate gamma posterior -->
-<!-- aPost <- a+T -->
-<!-- bPost <- b+n -->
-<!-- postConjugate <- dgamma(lambdavals, aPost, bPost) -->
-<!-- postConjugate <- postConjugate/sum(postConjugate) -->
-<!-- ``` -->
-<!-- ```{r, eval=FALSE, echo=FALSE, results='hide',fig.show='hide'} -->
-<!-- ## plots -->
-<!-- lines(x=lambdavals,y=postDirect,col='green') -->
-<!-- lines(x=lambdavals,y=postConjugate,col='purple',lty=3) -->
-<!-- ## both curves coincide - as they should! The posterior is indeed Ga(a+T, b+n) -->
-<!-- ## the prior distribution has been pulled much closer to the likelihood, increasing its -->
-<!-- ## mean but also reducing its spread/variance. -->
-<!-- abline(v=aPost/bPost,col='green', lty=2) -->
-<!-- ## the posterior mean lies between the prior mean and the MLE (we proved this in lectures) -->
-<!-- ``` -->
-<!-- ```{r, eval=TRUE, echo=FALSE, results='hide',fig.show='asis'} -->
-<!-- ## all the plots, for show at the end -->
-<!-- plot(x=lambdavals, y=cnjPrior,ty='l',col='red',ylim=c(0,0.02),  -->
-<!--      xlab=expression(lambda), ylab='Probability') -->
-<!-- abline(v=a/b,lty=2,col='red') -->
-<!-- lines(x=lambdavals, y=like, col='blue') -->
-<!-- abline(v=T/n, col='blue', lty=2) -->
-<!-- lines(x=lambdavals,y=postDirect,col='green') -->
-<!-- lines(x=lambdavals,y=postConjugate,col='purple',lty=3) -->
-<!-- abline(v=aPost/bPost,col='green', lty=2) -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!-- * Use the exact Gamma posterior to find a 95\% posterior credible interval for $\lambda$. -->
-<!-- * Compare the posterior interval with the prior interval you found in Ex. 2.3. What has changed? -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide'} -->
-<!-- postCri <- qgamma(c(0.025,1-0.025),aPost,bPost) -->
-<!-- ``` -->
-<!-- # Exploring the effects of prior choice and sample size -->
-<!-- ## Changing the prior parameters -->
-<!-- ```{r priorparam} -->
-<!-- ``` -->
-<!-- To investigate how sensitive our results are to our choices for $a$ and $b$ in the prior Gamma distribution, we're going to want to repeat our previous calculations for different values of the prior parameters. To make this easier, let's wrap those calculations and plots in a new function that finds and draws the Gamma posterior for a given prior and data set: -->
-<!-- ```{block2, type='question'} -->
-<!--   * Write a function called `gammaPoisson` which: -->
-<!--       * Takes four arguments: the prior Gamma parameters `a` and `b`, and the summary statistics `T` and `n`. -->
-<!--       * Computes the $\text{Ga}(a,b)$ prior and the $\text{Ga}(a+T,b+n)$ posterior over the sequence of values in `lambdavals`. -->
-<!--       * Plots the (normalised) prior and posterior Gamma distributions as coloured curves on one plot. -->
-<!--       * Adds the MLE as a dashed vertical line. -->
-<!--   * Check your function by evaluating it with the values of `a`,`b`,`T`, and `n` we used for the `Medium` volcano data above. -->
-<!-- ``` -->
-<!-- ```{r, eval=TRUE, echo=FALSE, results='hide',fig.show='hide'} -->
-<!-- "gammaPoisson" <- function(a,b,T,n){ -->
-<!--   lambdavals <- seq(0,10,length=500)[-1] -->
-<!--   prior <- dgamma(lambdavals, a, b) -->
-<!--   prior <- prior/sum(prior) -->
-<!--   post <- dgamma(lambdavals, a+T, b+n) -->
-<!--   post <- post/sum(post) -->
-<!--   plot(x=lambdavals, y=prior, ylim=c(0,max(c(prior,post))),  col='red',ty='l', -->
-<!--        ylab='Probability',xlab=expression(lambda)) -->
-<!--   lines(x=lambdavals, y=post, col='green') -->
-<!--   abline(v=T/n,col='blue',lty=3) -->
-<!-- } -->
-<!-- gammaPoisson(a,b,T,n) -->
-<!-- ``` -->
-<!-- ```{block2, type='question'} -->
-<!-- * Investigate what happens as you change `a` and `b`. -->
-<!--   * How does the shape of the prior change? What impact does this have on the posterior distribution? -->
-<!--   * What happens for large values of `a` and `b`? How does this affect your results? -->
-<!-- ``` -->
-<!-- ```{r , eval=TRUE, echo=FALSE, results='hide',fig.show='hide'} -->
-<!-- ## just try some values of a,b -->
-<!-- gammaPoisson(0.5,1,T,n) -->
-<!-- gammaPoisson(1,0.5,T,n) -->
-<!-- gammaPoisson(2,1,T,n) -->
-<!-- gammaPoisson(5,1,T,n) -->
-<!-- gammaPoisson(10,2,T,n) -->
-<!-- gammaPoisson(8,1,T,n) -->
-<!-- gammaPoisson(32,4,T,n) -->
-<!-- ## Large a,b -->
-<!-- gammaPoisson(100,50,T,n) -->
-<!-- gammaPoisson(1000,500,T,n) -->
-<!-- ## The prior becomes very narrow, and very concentrated - thus we have a very low level -->
-<!-- ## of prior uncertainty/are very sure of what lambda is.  -->
-<!-- ## The posterior then doesn't change much/move very far after seeing the data, as our -->
-<!-- ## certainty in the prior is more influential than the information in the likelihood. -->
-<!-- ## Consequently, large values of (a,b) are difficult to override with the data, and we'd -->
-<!-- ## need a very large sample before we could make much difference. This could be risky if -->
-<!-- ## those values are inappropriate. -->
-<!-- ``` -->
-<!-- ## Updating beliefs with large samples -->
-<!-- ```{r largesamp} -->
-<!-- ``` -->
-<!-- Theory in Lecture 18 will show that as the sample size grows large, the posterior distribution tends towards a Normal distribution and the posterior distribution becomes progressively less affected by the choice of prior distribution. -->
-<!-- Let's expand our data with the records of volcanic eruptions for the entire 20th century. As records are slightly incomplete, only the counts of `Large` eruptions over this period can be considered trustworthy. For the entire 100 years, a total of 64 `Large` (VEI$\geq 4$) eruptions were recorded -->
-<!-- ```{block2, type='question'} -->
-<!-- * Combine the 20th century data with the data from 2000-2018 and compute new summary statistics for the `Large` volcanic eruptions from 1900-2018. Save these as `Tbig` and `Nbig`. -->
-<!-- * Use a prior of $\lambda\sim\text{Ga}(2,2)$, and plot the posterior given the combined data. What happens to the posterior? -->
-<!-- ``` -->
-<!-- ```{r,echo=FALSE,results='hide',fig.show='hide'} -->
-<!-- Tbig <- sum(volcano$Large)+64 -->
-<!-- Nbig <- length(volcano$Large)+100 -->
-<!-- bigPost <- dgamma(lambdavals,a+Tbig,b+Nbig) -->
-<!-- bigPost <- bigPost/sum(bigPost) -->
-<!-- gammaPoisson(2,2,Tbig,Nbig) -->
-<!-- ``` -->
-<!-- The large sample of data is clearly very informative for $\lambda$, resulting in a posterior distribution that is concentrated over a small range of possible $\lambda$ values. Let's refocus our plot on that sub-interval: -->
-<!-- ```{block2, type='question'} -->
-<!-- * By modifying your Gamma-Poisson function, redraw the same plot to zoom in on the interval $\lambda\in[0.25,1.25]$. Hint: you'll need to set the [`xlim`](r_8_advplots.html#xlim) argument to `plot` (or add it as an argument to your function).  -->
-<!-- * What do you notice about the shape of the Gamma posterior distribution? -->
-<!-- ``` -->
-<!-- ```{r, eval=TRUE, echo=FALSE, results='hide',fig.show='hide'} -->
-<!-- "gammaPoisson2" <- function(a,b,T,n){ -->
-<!--   lambdavals <- seq(0.25,1.25,length=500)[-1] -->
-<!--   prior <- dgamma(lambdavals, a, b) -->
-<!--   prior <- prior/sum(prior) -->
-<!--   post <- dgamma(lambdavals, a+T, b+n) -->
-<!--   post <- post/sum(post) -->
-<!--   plot(x=lambdavals, y=prior, ylim=c(0,max(c(prior,post))),  col='red',ty='l', -->
-<!--        ylab='Probability',xlab=expression(lambda)) -->
-<!--   lines(x=lambdavals, y=post, col='green') -->
-<!--   abline(v=T/n,col='blue',lty=3) -->
-<!-- } -->
-<!-- gammaPoisson2(2,2,Tbig,Nbig) -->
-<!-- ``` -->
-<!-- ### Theory: Limiting posterior distribution -->
-<!-- From theory seen in Lecture 18, if we suppose that $X=(X_1,\dots,X_n)$ are an i.i.d. sample of size $n$ from a distribution with pdf $f(x~|~\theta)$ where $X_i \perp X_j ~|~ \theta$ and $f(x~|~\theta)$ is twice differentiable, then for $n$ 'large enough' the posterior distribution for $\theta ~|~ x$ is approximately -->
-<!--    \[ -->
-<!--    f(\theta ~|~ x) \approx \text{N}\left(\widehat{\theta}, -->
-<!--          \frac{1}{n\text{I}\left(\widehat{\theta}\right)}\right), -->
-<!--    \] -->
-<!-- where $\widehat{\theta}$ is the MLE of the parameter $\theta$, and $\text{I}(\widehat{\theta})$ is the observed Fisher information for a sample of size 1. -->
-<!-- For a Poisson distribution, we have: -->
-<!--    *   $\widehat{\lambda}=\frac{T}{n}$  -->
-<!--    *   $\text{I}(\lambda)=\frac{1}{\lambda}$. -->
-<!-- ```{block2, type='question'} -->
-<!-- * Using the results above, compute the mean and variance of the limiting posterior distribution for the `Large` volcano eruption data. -->
-<!-- * Using `dnorm`, evaluate the approximating pdf for $\lambda$ over `lambdavals`. Normalise it, and add it to your plot using a thick dashed line. -->
-<!-- * Is the limiting normal distribution in agreement with the Gamma posterior? If it differs, how does it differ and to what extent? -->
-<!-- * Do the values of the Gamma prior parameters $a$ and $b$ affect the quality of the approximation?  -->
-<!-- ``` -->
-<!-- ```{r, eval=TRUE, echo=FALSE, results='hide',fig.show='hide'} -->
-<!-- ## easiest just to add it to the function -->
-<!-- "gammaPoisson3" <- function(a,b,T,n){ -->
-<!--   lambdavals <- seq(0.25,1.25,length=500)[-1] -->
-<!--   prior <- dgamma(lambdavals, a, b) -->
-<!--   prior <- prior/sum(prior) -->
-<!--   post <- dgamma(lambdavals, a+T, b+n) -->
-<!--   post <- post/sum(post) -->
-<!--   plot(x=lambdavals, y=prior, ylim=c(0,max(c(prior,post))),  col='red',ty='l', -->
-<!--        ylab='Probability',xlab=expression(lambda)) -->
-<!--   lines(x=lambdavals, y=post, col='green') -->
-<!--   abline(v=T/n,col='blue',lty=3) -->
-<!--   mu <- T/n # mean = lambda hat -->
-<!--   sig2 <- 1/(n*(1/(T/n))) # var = 1/[nI(lambda hat)] -->
-<!--   limPost <- dnorm(lambdavals, mu, sd=sqrt(sig2)) -->
-<!--   limPost <- limPost/sum(limPost) -->
-<!--   lines(x=lambdavals, y=limPost,lty=3,lwd=2,col='magenta') -->
-<!-- } -->
-<!-- gammaPoisson3(2,2,Tbig,Nbig) -->
-<!-- ## The normal curve is very close to the Gamma posterior. There is slight deviation due to the  -->
-<!-- ## asymmetry of the Gamma density, but it looks like a good approximation. -->
-<!-- ``` -->
+<p>In this practical we use R to investigate the conjugate Bayesian
+analysis for Poisson data. We will also investigate using the effects of
+the prior distribution on the posterior, and the situation where our
+sample size grows large.</p>
+<ul>
+<li><a href="scripts/practical_1-4.R">Download the R Script</a> - right
+click, and Save As</li>
+</ul>
+
+<div class="goals">
+<ul>
+<li>You will need the following skills from previous practicals:
+<ul>
+<li>Creating vectors with <code>seq</code></li>
+<li>Drawing a plot of a known function using <code>curve</code></li>
+<li>Using additional graphical parameters to customise plots with colour
+(<code>col</code>), line type (<code>lty</code>), axis range
+(<code>xlim</code> and <code>ylim</code>) etc</li>
+<li>Adding simple straight lines to plots with <code>abline</code></li>
+<li>Writing your own functions with <code>function</code></li>
+</ul></li>
+<li>New R techniques:
+<ul>
+<li>Using <code>plot</code> to draw plots of general data, and
+<code>lines</code> and <code>point</code> to add additional data</li>
+<li>Using R’s built-in functions to evaluate a standard pdf,
+e.g. <code>dgamma</code> and <code>dnorm</code></li>
+<li>Using the quantile functions, e.g. <code>qgamma</code>, to produce
+exact credible intervals using standard distributions</li>
+<li>Using <code>sapply</code> to evaluate a function with different
+arguments specified by the element of a vector</li>
+</ul></li>
+</ul>
+</div>
+<div id="the-data" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> The Data</h1>
+<p>Our dataset concerns the number of volcanoes that erupted each year
+from 2000 to 2018, taken from <a
+href="https://volcano.si.edu/faq/index.cfm?question=eruptionsbyyear">here</a>.
+The data are given in the table below, where each volcanic eruption is
+counted in the year that the eruption started. Volcanic eruptions are
+split into groups depending on the severity of the eruption, as measured
+on the logarithmically-scaled <em>Volcanic Explosivity Index</em> (VEI).
+For example, the 2010 eruption of Eyjafjallajökull in Iceland had a VEI
+of 4, whereas the eruption of Krakatoa in 1883 was VEI6.</p>
+<p>The eruptions are loosely classified as <code>Small</code> (VEI<span
+class="math inline">\(\leq 2\)</span>), <code>Medium</code> (<span
+class="math inline">\(2&lt;\)</span> VEI <span
+class="math inline">\(&lt;4\)</span>), and <code>Large</code> (VEI <span
+class="math inline">\(\geq 4\)</span>).</p>
+<table class="table table-striped" style="margin-left: auto; margin-right: auto;">
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Year
+</td>
+<td style="text-align:right;">
+2000
+</td>
+<td style="text-align:right;">
+2001
+</td>
+<td style="text-align:right;">
+2002
+</td>
+<td style="text-align:right;">
+2003
+</td>
+<td style="text-align:right;">
+2004
+</td>
+<td style="text-align:right;">
+2005
+</td>
+<td style="text-align:right;">
+2006
+</td>
+<td style="text-align:right;">
+2007
+</td>
+<td style="text-align:right;">
+2008
+</td>
+<td style="text-align:right;">
+2009
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Small
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+32
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+34
+</td>
+<td style="text-align:right;">
+29
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+28
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Medium
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Large
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+</tbody>
+</table>
+<table class="table table-striped" style="margin-left: auto; margin-right: auto;">
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Year
+</td>
+<td style="text-align:right;">
+2010
+</td>
+<td style="text-align:right;">
+2011
+</td>
+<td style="text-align:right;">
+2012
+</td>
+<td style="text-align:right;">
+2013
+</td>
+<td style="text-align:right;">
+2014
+</td>
+<td style="text-align:right;">
+2015
+</td>
+<td style="text-align:right;">
+2016
+</td>
+<td style="text-align:right;">
+2017
+</td>
+<td style="text-align:right;">
+2018
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Small
+</td>
+<td style="text-align:right;">
+39
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:right;">
+40
+</td>
+<td style="text-align:right;">
+41
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+37
+</td>
+<td style="text-align:right;">
+30
+</td>
+<td style="text-align:right;">
+34
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Medium
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;">
+Large
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+</tbody>
+</table>
+
+<div class="question">
+<ul>
+<li>Run the <code>R</code> code below to input the data, and create a
+new data frame called <code>volcano</code>, with columns
+<code>Year</code>, <code>Small</code>, <code>Medium</code>, and
+<code>Large</code>.
+</div></li>
+</ul>
+<pre class="r"><code>volcano &lt;- data.frame(Year = 2000:2018, 
+           Small = c(30, 25, 30, 32, 29, 29, 34, 29, 25, 28, 39, 30, 
+                     40, 40, 41, 26, 37, 30, 34), 
+           Medium = c(6, 6, 5, 5, 8, 4, 3, 3, 7, 2, 6, 6, 4, 7, 7, 
+                      5, 4, 6, 4),
+           Large = c(0, 0, 0, 2, 1, 1, 1, 3, 2, 1, 3, 0, 1, 0, 1, 
+                     0, 2, 0, 1))</code></pre>
+
+<div class="technique">
+<p><strong>Plot, points, and lines</strong></p>
+<p>The <code>plot</code> function produces a scatterplot of its two
+arguments. Suppose we have saved our <span
+class="math inline">\(x\)</span> coordinates in a vector <code>a</code>,
+and our <span class="math inline">\(y\)</span> coordinates in a vector
+<code>b</code>, then to draw a scatterplot of <span
+class="math inline">\((x,y)\)</span> we type</p>
+<p><code>plot(x=a, y=b)</code></p>
+<p>If the argument labels <code>x</code> and <code>y</code> are not
+supplied, <em>R</em> will assume the first argument is <code>x</code>
+and the second is <code>y</code>. If only one vector of data is
+supplied, this will be taken as the <span
+class="math inline">\(y\)</span> value and will be plotted against the
+integers <code>1:length(y)</code>, i.e. in the sequence in which they
+appear in the data.</p>
+<p>All of the standard plot functions can be customised by passing
+additional arguments to the function. For instance, we can add a plot
+title and axis labels by supplying optional arguments:</p>
+<ul>
+<li><code>type</code> - determines the type of plot to draw. Possible
+types are:
+<ul>
+<li>“p” for <strong>p</strong>oints</li>
+<li>“l” for <strong>l</strong>ines</li>
+<li>“b” for <strong>b</strong>oth (points connected by lines)</li>
+<li>“h” for <strong>h</strong>istogram-like vertical lines</li>
+<li>“s” for <strong>s</strong>tep lines</li>
+</ul></li>
+<li><code>xlab</code>, <code>ylab</code> - provides a label for the
+horizontal and vertical axes</li>
+<li><code>xlim</code>, <code>ylim</code> - allows for specification of a
+minimum and maximum value of the corresponding axis limits,
+e.g. <code>xlim=c(0,10)</code> will set the horizontal axis limits to be
+<span class="math inline">\([0,10]\)</span>.</li>
+<li><code>col</code> - can be specified to <a
+href="r_8_advplots.html#col">use colour</a> for drawing</li>
+</ul>
+<p>For example,</p>
+<p><code>plot(x=-10:10,y=sin((-10:10)/(2*pi)), type="b", xlab='A', ylim=c(-1.5,1))</code></p>
+<p><em>Note</em>: Once a plot has been drawn, it is not possible to
+erase any features from it - we can only add extra lines or points to
+it. So, if you make a mistake drawing your plot then you’ll need to
+start over with a fresh one by calling <code>plot</code> again.</p>
+<p>After creating a <code>plot</code>, we can <em>add</em> additional
+points to the plot by calling the <code>points</code> function which
+draws additional points at the specified <code>x</code> and
+<code>y</code> values. Similarly, the <code>lines</code> function will
+draw connected lines between its <code>x</code> and <code>y</code>
+arguments.</p>
+</div>
+
+<div class="question">
+<ul>
+<li><code>plot</code> the number of <code>Small</code> eruptions against
+the year using a vertical axis range (<code>ylim</code>) of <span
+class="math inline">\([0,50]\)</span>.</li>
+<li>Experiment with the plot <code>type</code>s to see how the different
+plots represent the data.</li>
+<li>Redraw the data as a <code>l</code>ine <code>plot</code>, and add
+<code>lines</code> of different colours to the same plot for the other
+two groups of eruptions.</li>
+<li>Do you see any apparent relationship between time and number of
+eruptions?
+</div></li>
+</ul>
+
+<div class="question">
+<ul>
+<li>Now plot the <code>hist</code>ogram of the number of
+<code>Medium</code> eruptions - does it look like it could follow a
+Poisson distribution? How else could you quickly assess this?
+</div></li>
+</ul>
+</div>
+<div id="conjugate-analysis-with-the-gamma-poisson-model"
+class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Conjugate analysis with
+the Gamma-Poisson model</h1>
+<div id="the-theory" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> The Theory</h2>
+<p>A Poisson distribution is often used to model the counts of random
+events occurring within a fixed period of time at some rate <span
+class="math inline">\(\lambda\)</span>. For such a random variable <span
+class="math inline">\(X\)</span> where <span
+class="math inline">\(X\sim\text{Po}(\lambda)\)</span> , a Bayesian
+analysis will require a prior distribution for the unknown Poisson
+parameter <span class="math inline">\(\lambda\)</span>. We have seen
+that the Gamma distribution provides a conjugate prior for this
+particular problem. Therefore, if our data <span
+class="math inline">\(X_1,\dots,X_n\)</span> are <span
+class="math inline">\(\text{Po}(\lambda)\)</span>, and our prior
+distribution for <span class="math inline">\(\lambda\)</span> is <span
+class="math inline">\(\text{Ga}(a,b)\)</span>. Then the posterior
+distribution for <span class="math inline">\(\lambda ~|~
+X_1,\dots,X_n\)</span> is given by: <span class="math display">\[
+    \lambda ~|~ X_1,\dots,X_n \sim \text{Ga}(a+T, b+n),
+\]</span> where <span class="math inline">\(T=\sum_{i=1}^n X_i=
+n\overline{X}\)</span>.</p>
+</div>
+<div id="the-prior" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> The prior</h2>
+<p>First, let’s use the Gamma distribution to identify an appropriate
+prior for our Poisson count data.</p>
+
+<div class="technique">
+<p><strong>Standard density functions in R</strong></p>
+<p><code>R</code> provides built-in functions to evaluate the PDF of
+standard distributions. The density function for a Gamma distribution
+<span class="math inline">\(\text{Ga}(a,b)\)</span> is used as
+follows</p>
+<p><code>dgamma(x, shape=a, rate=b)</code></p>
+<p>where <code>x</code> is the point (or vector of points) where we want
+to evaluate the PDF, and <code>a</code> and <code>b</code> are the usual
+Gamma parameter values.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>Create a vector containing a <code>seq</code>uence of 500
+equally-spaced values over the interval <span
+class="math inline">\([0,10]\)</span>. Call this
+<code>lambdavals</code>.</li>
+<li>Evaluate the <span class="math inline">\(\text{Ga}(1,1)\)</span> pdf
+at each of the values of <span class="math inline">\(\lambda\)</span> in
+<code>lambdavals</code> using the gamma PDF <code>dgamma</code>.</li>
+<li>Make a <code>plot</code> of the pdf against <span
+class="math inline">\(\lambda\)</span> as a solid black line.
+</div></li>
+</ul>
+<p>An expert vulcanologist believes that the unknown rate of
+<code>Medium</code> eruptions, <span
+class="math inline">\(\lambda\)</span>, is such that a range of <span
+class="math inline">\([1,6]\)</span> would be plausible.</p>
+<p><em>You may need to use a pen and paper to do some maths to answer
+some of the following exercise!</em></p>
+
+<div class="question">
+<ul>
+<li>Interpret the expert’s given interval as corresponding to a
+statement of <span class="math inline">\(\mathbb{E}(\lambda) \pm
+2\text{sd}(\lambda)\)</span>. Using this statement and the expert’s
+interval given above, find the value of the mean (<span
+class="math inline">\(\mathbb{E}(\lambda)\)</span>) and variance (<span
+class="math inline">\(\mathbb{V}\text{ar}(\lambda)=\text{sd}(\lambda)^2\)</span>)
+of the prior distribution for <span
+class="math inline">\(\lambda\)</span>.</li>
+<li>Equate the prior mean and variance you have just found to the
+theoretical values for the expectation (<span
+class="math inline">\(a/b\)</span>) and variance (<span
+class="math inline">\(a/b^2\)</span>) of a Gamma pdf. Solve these two
+equations to find the expert’s corresponding values of the parameters
+<span class="math inline">\(a\)</span> and <span
+class="math inline">\(b\)</span>.</li>
+<li>Evaluate the expert’s prior pdf for <span
+class="math inline">\(\lambda\)</span> at each of
+<code>lambdavals</code>, and save it as <code>cnjPrior</code>.</li>
+<li>For plotting purposes, we need to normalise the values of
+<code>cnjPrior</code> so that they sum (integrate) to 1. Divide the
+values of <code>cnjPrior</code> by the <code>sum</code> of the values in
+<code>cnjPrior</code>, and replace <code>cnjPrior</code> by these
+normalised values.</li>
+<li>Produce a fresh plot of the expert’s prior pdf for <span
+class="math inline">\(\lambda\)</span> as a solid red curve. Ensure your
+vertical axis covers <span class="math inline">\([0,0.02]\)</span>.</li>
+<li>Add a vertical red and dashed line (<code>abline</code> using the
+<code>v</code> argument) at the location of the prior expectation for
+<span class="math inline">\(\lambda\)</span>.
+</div></li>
+</ul>
+<p><img src="practical_1-4_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+
+<div class="technique">
+<p><strong>Quantiles of standard densities</strong></p>
+<p>In addition to built-in functions for PDFs of standard distributions,
+<code>R</code> also provides the <em>quantile function</em> for a pdf.
+The quantile function evaluates the inverse of the cumulative
+distribution function, <span class="math inline">\(F_X^{-1}(u)\)</span>.
+Given a probability value <span
+class="math inline">\(u\in[0,1]\)</span>, the quantile function returns
+the value <span class="math inline">\(x\)</span> of <span
+class="math inline">\(X\)</span> for which <span
+class="math inline">\(P[X\leq x]=u\)</span>, and so the quantile
+functions are particularly useful for finding critical values of
+distributions and for finding exact credible intervals.</p>
+<p>The quantile function for a Gamma density <span
+class="math inline">\(X\sim \text{Ga}(a,b)\)</span> is used as
+follows</p>
+<p><code>qgamma(alpha, shape=a, rate=b)</code></p>
+<p>where <code>alpha</code> is the lower tail probability (or vector of
+lower-tail probabilities) for which we want the corresponding value(s)
+of <span class="math inline">\(X\)</span>, and <code>a</code> and
+<code>b</code> are the usual Gamma parameter values.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>Use the <code>qgamma</code> function to find a 95% equal-tailed
+prior credible interval for <span class="math inline">\(\lambda\)</span>
+using the expert’s prior distribution above. <em>Hint:</em> find the
+values of <span class="math inline">\(\lambda\)</span> with lower and
+upper tail probabilities of <span
+class="math inline">\(2.5\%\)</span>.</li>
+<li>How does this compare to the expert’s original interval?
+</div></li>
+</ul>
+</div>
+<div id="the-likelihood" class="section level2" number="2.3">
+<h2><span class="header-section-number">2.3</span> The likelihood</h2>
+<p>The next ingredient in the Bayesian calculation requires us to
+capture the information contained in the data via the likelihood. In a
+Bayesian context, the likelihood is the conditional distribution of the
+data <span class="math inline">\(X_1,\dots, X_n\)</span> given the
+parameter <span class="math inline">\(\lambda.\)</span></p>
+<p>Let’s compute the likelihood given our data on <code>Medium</code>
+volcanic eruptions, and add it to the plot.</p>
+
+<div class="question">
+<ul>
+<li>Write a function <code>poisLike</code> that computes the Poisson
+likelihood for the sample of <code>Medium</code> volcano eruptions. Your
+function should:
+<ul>
+<li>Take one argument <code>lambda</code></li>
+<li>Compute the Poisson probability for each data point in
+<code>volcano$Medium</code> given the value of <code>lambda</code>.
+<em>Hint</em>: the <code>dpois</code> function evaluates Poisson
+probabilities for a vector of values <code>x</code> and parameter
+<code>lambda</code>. Or you can use your own function from last
+time.</li>
+<li>Combine the probabilities to find the likelihood of the entire
+sample, and <code>return</code> it.</li>
+<li>If your function is working correctly, you should agree with the
+output below.
+</div></li>
+</ul></li>
+</ul>
+<pre class="r"><code>poisLike(5)</code></pre>
+<pre><code>## [1] 4.225604e-17</code></pre>
+
+<div class="technique">
+<p><strong>Using <code>sapply</code> to repeat calculations over a
+vector</strong></p>
+<p>We have seen previously that we can use the <code>replicate</code> to
+repeatedly call a function with no arguments. For functions which do
+take an argument, we often want to call that function at many different
+values. To do this, we use <code>sapply</code> to apply a specified
+function to every element of a vector as its argument, and then return a
+vector formed from the results.</p>
+<p><code>sapply(x, fun)</code></p>
+<p>applies the function <code>fun</code> to every element of the vector
+<code>x</code> it then returns a vector containing the values of
+<code>fun(x[1])</code>, <code>fun(x[2])</code>, and so on. So, to
+compute the square-root of the integers <span
+class="math inline">\(1\)</span> to <span
+class="math inline">\(10\)</span>, we would write</p>
+<p><code>sapply(1:10, FUN=sqrt)</code></p>
+<p>or alternatively</p>
+<p>which applies the square root function to each of the integers 1 to
+10.</p>
+<p>There are other variations of <code>apply</code> which work with
+matrices and other data structures, and we will see those in later
+practicals.</p>
+</div>
+
+<div class="question">
+<ul>
+<li>Use <code>sapply</code> to evaluate the Poisson likelihood
+(<code>poisLike</code>) for each of the values of <span
+class="math inline">\(\lambda\)</span> in <code>lambdavals</code>. Save
+this as <code>like</code>.</li>
+<li>Normalise <code>like</code> so that its values sum to <span
+class="math inline">\(1\)</span>.</li>
+<li>Add the likelihood to your plot of the prior distribution as
+connected blue <code>lines</code>.</li>
+<li>Add the maximum likelihood estimate of <span
+class="math inline">\(\lambda\)</span> as a vertical dashed blue
+line.</li>
+<li>Your plot should look like the one below
+</div></li>
+</ul>
+<p><img src="practical_1-4_files/figure-html/unnamed-chunk-27-1.png" width="672" /></p>
+</div>
+<div id="the-posterior" class="section level2" number="2.4">
+<h2><span class="header-section-number">2.4</span> The posterior</h2>
+We can apply Bayes rule directly, given the prior and likelihood, and
+numerically compute the posterior density for all of the values of <span
+class="math inline">\(\lambda\)</span>.
+<div class="question">
+<ul>
+<li>Directly compute the posterior for <span
+class="math inline">\(\lambda\)</span> by Bayes theorem, and save these
+values as <code>postDirect</code>. Normalise the <code>postDirect</code>
+so that it sums to <span class="math inline">\(1\)</span>.
+<em>Hint:</em> <span class="math inline">\(\text{Posterior} \propto
+\text{Likelihood} \times \text{Prior}\)</span>.</li>
+<li>Add the posterior to your plot as a solid green curve.
+</div></li>
+</ul>
+<p>However, we also know that we’re using the conjugate Gamma prior with
+a Poisson likelihood, so our posterior distribution for <span
+class="math inline">\(\lambda\)</span> will also be a Gamma with
+parameter values as above. Let’s verify that this is the case, and add
+the resulting density function to our plot.</p>
+
+<div class="question">
+<ul>
+<li>Now use conjugacy to evaluate the conjugate Gamma posterior
+distribution.
+<ul>
+<li>First find the posterior values of the Gamma parameters <span
+class="math inline">\(a\)</span> and <span
+class="math inline">\(b\)</span>, save these as <code>aPost</code> and
+<code>bPost</code>.</li>
+<li>Now use <code>dgamma</code> with the posterior parameter values to
+evaluate the posterior Gamma density at each of <code>lambdavals</code>.
+Save these values to <code>postConjugate</code> and normalise to sum to
+<span class="math inline">\(1\)</span>.</li>
+</ul></li>
+<li>Draw the conjugate posterior on your plot as a dashed
+<code>purple</code> curve.</li>
+<li>What do you see? Do the results agree with each other? How has the
+prior changed?</li>
+<li>Add the posterior mean as a vertical green line.</li>
+<li>What do you notice about the relationship between the posterior
+mean, the prior mean, and the maximum likelihood estimate?
+</div></li>
+</ul>
+<p><img src="practical_1-4_files/figure-html/unnamed-chunk-34-1.png" width="672" /></p>
+
+<div class="question">
+<ul>
+<li>Use the exact Gamma posterior to find a 95% posterior credible
+interval for <span class="math inline">\(\lambda\)</span>.</li>
+<li>Compare the posterior interval with the prior interval you found
+earlier. What has changed?
+</div></li>
+</ul>
+</div>
+</div>
+<div
+id="further-exercises-exploring-the-effects-of-prior-choice-and-sample-size"
+class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Further Exercises:
+Exploring the effects of prior choice and sample size</h1>
+<div id="changing-the-prior-parameters" class="section level2"
+number="3.1">
+<h2><span class="header-section-number">3.1</span> Changing the prior
+parameters</h2>
+<p>To investigate how sensitive our results are to our choices for <span
+class="math inline">\(a\)</span> and <span
+class="math inline">\(b\)</span> in the prior Gamma distribution, we’re
+going to want to repeat our previous calculations for different values
+of the prior parameters. To make this easier, let’s wrap those
+calculations and plots in a new function that finds and draws the Gamma
+posterior for a given prior and data set:</p>
+
+<div class="question">
+<ul>
+<li>Write a function called <code>gammaPoisson</code> which:
+<ul>
+<li>Takes four arguments: the prior Gamma parameters <code>a</code> and
+<code>b</code>, and the summary statistics <code>T</code> and
+<code>n</code>.</li>
+<li>Computes the <span class="math inline">\(\text{Ga}(a,b)\)</span>
+prior and the <span class="math inline">\(\text{Ga}(a+T,b+n)\)</span>
+posterior over the sequence of values in <code>lambdavals</code>.</li>
+<li>Plots the (normalised) prior and posterior Gamma distributions as
+coloured curves on one plot.</li>
+<li>Adds the MLE as a dashed vertical line.</li>
+</ul></li>
+<li>Check your function by evaluating it with the values of
+<code>a</code>,<code>b</code>,<code>T</code>, and <code>n</code> we used
+for the <code>Medium</code> volcano data above.
+</div></li>
+</ul>
+
+<div class="question">
+<ul>
+<li>Investigate what happens as you change <code>a</code> and
+<code>b</code>.
+<ul>
+<li>How does the shape of the prior change? What impact does this have
+on the posterior distribution?</li>
+<li>What happens for large values of <code>a</code> and <code>b</code>?
+How does this affect your results?
+</div></li>
+</ul></li>
+</ul>
+</div>
+<div id="updating-beliefs-with-large-samples" class="section level2"
+number="3.2">
+<h2><span class="header-section-number">3.2</span> Updating beliefs with
+large samples</h2>
+<p>In Lecture 26, we will see that show that as the sample size grows
+large, the posterior distribution tends towards a Normal distribution
+and the posterior distribution becomes progressively less affected by
+the choice of prior distribution.</p>
+<p>Let’s expand our data with the records of volcanic eruptions for the
+entire 20th century. As records are slightly incomplete, only the counts
+of <code>Large</code> eruptions over this period can be considered
+trustworthy. For the entire 100 years, a total of 64 <code>Large</code>
+(VEI<span class="math inline">\(\geq 4\)</span>) eruptions were
+recorded</p>
+
+<div class="question">
+<ul>
+<li>Combine the 20th century data with the data from 2000-2018 and
+compute new summary statistics for the <code>Large</code> volcanic
+eruptions from 1900-2018. Save these as <code>Tbig</code> and
+<code>Nbig</code>.</li>
+<li>Use a prior of <span
+class="math inline">\(\lambda\sim\text{Ga}(2,2)\)</span>, and plot the
+posterior given the combined data. What happens to the posterior?
+</div></li>
+</ul>
+<p>The large sample of data is clearly very informative for <span
+class="math inline">\(\lambda\)</span>, resulting in a posterior
+distribution that is concentrated over a small range of possible <span
+class="math inline">\(\lambda\)</span> values. Let’s refocus our plot on
+that sub-interval:</p>
+
+<div class="question">
+<ul>
+<li>By modifying your Gamma-Poisson function, redraw the same plot to
+zoom in on the interval <span
+class="math inline">\(\lambda\in[0.25,1.25]\)</span>. Hint: you’ll need
+to set the <a href="r_8_advplots.html#xlim"><code>xlim</code></a>
+argument to <code>plot</code> (or add it as an argument to your
+function).</li>
+<li>What do you notice about the shape of the Gamma posterior
+distribution?
+</div></li>
+</ul>
+<div id="theory-limiting-posterior-distribution" class="section level3"
+number="3.2.1">
+<h3><span class="header-section-number">3.2.1</span> Theory: Limiting
+posterior distribution</h3>
+<p>If we suppose that <span
+class="math inline">\(X=(X_1,\dots,X_n)\)</span> are an i.i.d. sample of
+size <span class="math inline">\(n\)</span> from a distribution with pdf
+<span class="math inline">\(f(x~|~\theta)\)</span> where <span
+class="math inline">\(X_i \perp X_j ~|~ \theta\)</span> and <span
+class="math inline">\(f(x~|~\theta)\)</span> is twice differentiable,
+then for <span class="math inline">\(n\)</span> ‘large enough’ the
+posterior distribution for <span class="math inline">\(\theta ~|~
+x\)</span> is approximately <span class="math display">\[
+    f(\theta ~|~ x) \approx \text{N}\left(\widehat{\theta},
+          \frac{1}{{I}\left(\widehat{\theta}\right)}\right),
+    \]</span> where <span
+class="math inline">\(\widehat{\theta}\)</span> is the MLE of the
+parameter <span class="math inline">\(\theta\)</span>, and <span
+class="math inline">\(\text{I}(\widehat{\theta})\)</span> is the
+observed Fisher information for a sample of size 1.</p>
+<p>For a Poisson distribution, we have:</p>
+<ul>
+<li><span class="math inline">\(\widehat{\lambda}=\frac{\sum_i
+x_i}{n}\)</span></li>
+<li><span
+class="math inline">\(\mathcal{L}&#39;&#39;(\lambda)=-\frac{\sum_i
+x_i}{\lambda^2}\)</span>.</li>
+</ul>
+
+<div class="question">
+<ul>
+<li>Using the results above, compute the mean and variance of the
+limiting posterior distribution for the <code>Large</code> volcano
+eruption data.</li>
+<li>Using <code>dnorm</code>, evaluate the Normal approximation to the
+posterior pdf for <span class="math inline">\(\lambda\)</span> over
+<code>lambdavals</code>. Normalise it again to sum to one, and add it to
+your plot using a thick dashed line.</li>
+<li>Is the limiting normal distribution in agreement with the Gamma
+posterior? If it differs, how does it differ and to what extent?</li>
+<li>Do the values of the Gamma prior parameters <span
+class="math inline">\(a\)</span> and <span
+class="math inline">\(b\)</span> affect the quality of the
+approximation?
+</div></li>
+</ul>
+</div>
+</div>
+</div>
 
 
 

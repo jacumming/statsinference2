@@ -1,520 +1,543 @@
 #
-# PRACTICAL 1-3: Distributions Arising in Normal Sampling
-# -------------------------------------------------------
+# PRACTICAL 1-2: 1-3: Likelihood Inference
+# ---------------------------------
 #
 #
-# In this practical, we will investigate the behaviour and distributions of summary statistics
-# calculated from samples of normally-distributed data. To do this, we will use R to simulate large
-# numbers of Normal random samples, and from each of which we will compute the sample mean and
-# variance. By repeating this experiment for a large number of such samples, we will accumulate a
-# large number of sample means and variances which we will investigate and compare to the results
-# we would expect to find from the theory in lectures.
-  
-# You will need the following skills from previous practicals:
-#   *   Basic R skills with arithmetic, functions, etc
-#   *   Manipulating and creating vectors: `c`, `seq`, 
-#   *   Calculating data summaries: `mean`, `sd`, `var`, `min`, `max`
-#   *   Plotting a scatterplot with `plot`, and a histogram with `hist`
-# New R techniques:
-#   *   Random number generation with `rnorm`, `runif`, etc
-#   *   Evaluation of standard density functions via `dnorm`, `dunif`, etc
-#   *   Creating a matrix with `matrix`
-#   *   Applying a function to every row/column of a matrix with `apply`
-#   *   Drawing a curve on an existing plot using `lines`
+# We have seen in lectures that the MLEs for the parameters of several common 
+# distributions can be found in closed form. However, in general, the problem is 
+# not guaranteed to be so easy with a simple closed-form result. Therefore, in 
+# these situations, we will have to find and maximise the likelihood numerically.
+
+
+#  *  You will need the following skills from previous practicals:
+#     *   Basic R skills with arithmetic, functions, etc
+#     *   Manipulating and creating vectors: `c`, `seq`,
+#     *   Calculating data summaries: `mean`, `sum`, `length`
+#     *   Drawing a histogram with `hist`, and adding simple lines to plots `abline`
+#     *   Customising plots using `col`our
+#  *  New R techniques:
+#     *   Drawing a plot of a simple function using `curve`
+#     *   Optimising a function with `optim`
+#     *   Extracting named elements of a list using the `$` operator
+
+
 
 #
+#
+# 1. The Poisson Likelihood
 # ==================================================================================
 #
-# 1. Normal Sampling Theory
-#
-# First, let's recap (or introduce) a little theory. If you haven't seen this yet in lectures, you
-# will soon (Lecture 4). Consider a sample of n Normally-distributed data points: X_1, ... ,X_n 
-# i.i.d random variables from N(μ, σ^2/n). We can say:
-#
-# * The sample mean Xbar has distribution:
-#
-#          n
-#  Xbar =  ∑ X_i ∼ N(μ,σ^2/n).
-#         i=1
-#
-# * The sample variance S^2 is independent of Xbar, and is such that
-#
-#  (n−1) 
-#  ----- S^2 ∼ χ^2_{n−1}.
-#   σ^2
-#
-# * If we standardise Xbar using the sample sd, S, instead of the population sd, σ, we don't get a
-# Normal distribution -  we get the following t distribution instead: 
-#
-#     (Xbar − μ)  
-# T = ----------  ∼ t_{n−1}
-#        S/√n
-
-
-# ========================================================================================
-#
-# 2. Generating the samples
-#
-#
-# In order to illustrate this theory, we require a large number of samples from normal distributions that will act as our data in the following calculations. To generate the random numbers from a normal distribution, we will use the `rnorm` function.
-#
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ We can use the `rnorm` function to generate random numbers from a normal distribution. To 
-# ^ generate `n` random normal variates from a Normal distribution with mean `m` and standard 
-# ^ deviation `s`, we use the command:
-# ^  
-# ^  rnorm(n, mean=m, sd=s)
-# ^
-# ^ The `mean` and `sd` arguments are optional, and default to 0 and 1 respectively if missing.
-# ^
-# ^ For more details, see the section on random number generation in "R Help 5: Basic Stats".
-# ^
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-                                                 
-#
-# Exercise 2.1:
-# ~~~~~~~~~~~~~
-#  * Use the `rnorm` function to try generating:
-#
-#    a. 5 random standard Normal numbers
-#
-#    b. 20 random numbers from N(5, 5^2)
-#
-#  * Check the mean and standard deviation of your sample using the `mean` and `sd` functions - are the values what you expected?
-
-
-
-samp1 <- rnorm(5) ## 5 standard normals
-mean(samp1) ## expect mean approx 0, but sample is small so we wouldn't worry if we weren't close
-var(samp1)  ## and var approx 1
-samp2 <- rnorm(20,mean=5,sd=5) ## set mean and sd arguments to get N(5,25)
-mean(samp2) ## expect about 5
-sd(samp2) ## expect sqrt(25)=5
-
-
-
-
-# Exercise 2.2:
-# ~~~~~~~~~~~~~
-#
-#  * Now we're ready to construct our data set. Using `rnorm`, generate a vector of 500 random
-#    standard normal values, and save it to a variable `zs`. Check the mean and standard 
-#    deviation are consistent with the population distribution.
-
-
-zs <- rnorm(500)
-zs[1:5] ## print the first few elements
-mean(zs)
-sd(zs)
-
-
-
-# Exercise 2.3:
-# ~~~~~~~~~~~~~
-#
-# Let’s change the mean and variance of our sample to make things (fractionally) more interesting.
-# Lets suppose we want our data to come from a normal population with mean 17 and standard 
-# deviation 5.
-#
-#  * Recall that if Z ~ N(0,1), then (a+bZ) ~ N(a,b^2) - use this result to apply the appropriate
-#    transformation to `zs` to correspond with the new population mean and variance, and save the
-#    result to a new variable `xs`.
-#
-#  * Check the mean and standard deviation of xs to ensure your transformation worked as intended.
-#
-#  * Hint: you can apply standard arithmetic to vectors in R.
-
-xs <- 17+5*zs
-xs[1:5]
-mean(xs)
-sd(xs)
-
-
-
-# Next, we want to treat our 500 X values as if they were 100 different random samples, each of
-# size 5. To do this, we will transform our vector of length 500 into a `matrix` with 100 rows 
-# and 5 columns. This way, each of the rows in the matrix corresponds to a different random 
-# sample of size 5.
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ A matrix is created using the `matrix` function, which takes three arguments: the values of 
-# ^ the matrix (`data`), the number of rows (`nrow`), and the number of columns (`ncol`).
-# ^ 
-# ^ To produce a 3 x 3 matrix containing the integers 1 to 9, we would write:
-# ^ 
-# ^   matrix(1:9, nrow = 3, ncol=3)
-# ^ 
-# ^ For more details, see "R Help 6: Matrices".
-# ^ 
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-# Exercise 2.4:
-# ~~~~~~~~~~~~~
-#
-#
-# * Use the `matrix` function to create a  100 x 5 matrix from the values in `xs`. 
-# * Save the result as `xMatrix`.
-
-
-xMatrix <- matrix(xs, nr=100, nc=5)
-xMatrix[1:3,] ## print the first few rows
-
-
-
-# ========================================================================================
-#
-# 3. Investigating Xbar
-#
-#
-# To investigate the behaviour of Xbar, we need some data. From the previous step, we have 
-# effectively generated 100 Normal samples each of size 5, each represented by a row in 
-# `xMatrix`. What we want to do now to calculate the sample mean for each of these samples 
-# (i.e every row). This will give us a collection of 100 observed sample mean values, xbar, 
-# drawn from the distribution of Xbar which we can investigate more closely.
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ We can use the `apply` function to evaluate the same function for either every row or every
-# ^ column of a given matrix (or data frame). This is particularly useful for computing summary
-# ^ statistics (means, standard deviations, etc) for all variables in a data set.
-# ^ 
-# ^ The `apply` function takes three arguments: 
-# ^  *  `X` - the matrix or data frame to use for calculations
-# ^  *  `MARGIN` - which indicates whether to evaluate over the rows (`MARGIN=1`) or 
-# ^                columns (`MARGIN=2`) of the matrix
-# ^  *  `FUN` - the name of the function we wish to evaluate.
-# ^ 
-# ^ For example, to calculate the minimum value in each column of a matrix `A`, we could write
-# ^ 
-# ^   apply(A, MARGIN=2, FUN=min)
-# ^ 
-# ^ For more details, read the entry in "R Help 9: Programming" on `apply`.
-# ^                                          
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-#
-# Exercise 3.1:
-# ~~~~~~~~~~~~~
-#
-#  * Use the `apply` function to compute the sample `mean` for every row of `xMatrix`. 
-#    Save the results as `xbar`.
-#
-#  * Calculate the mean and variance of `xbar` - do they agree with the values that we would 
-#    expect from the theoretical distribution of Xbar given in section 1.1 above?
-
-xbar <- apply(xMatrix, MARGIN=1, FUN=mean)
-xbar[1:5]
-
-
-
-
-# Now we'll use the `hist` function to plot a histogram of the `xbar` values from our sample, 
-# and we'll overlay the Normal density curve we'd expect from the theory on top of the 
-# histogram using `lines`.
-
-#
-# Exercise 3.2:
-# ~~~~~~~~~~~~~
-#  * If you're unfamiliar with plotting histograms with `hist`, quickly read up  on the `hist`
-#    function in "R Help 7: Plots".
-#
-#  * Use `hist` to draw a histogram of `xbar` setting `breaks=15` to ensure we show enough detail
-#    in the bars in the plot, and set `freq=FALSE` to plot the vertical axis as frequency density
-#    instead of frequency.
-
-hist(xbar,freq=FALSE,breaks=15)
-
-
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ 
-# ^ TECHNIQUE: 
-# ^ 
-# ^ R provides a range of functions to support calculations with standard probability distributions.
-# ^ To save creating our own functions to evaluate the pdfs and cdfs, we can use these standard 
-# ^ functions instead. 
-# ^ 
-# ^ For every distribution there are four functions. The functions for each distribution begin
-# ^ with a particular letter to indicate the functionality (see table below) followed by the name
-# ^ of the distribution:
-# ^ 
-# ^ | Letter | e.g.    | Function                                                          |
-# ^ |--------|---------|-------------------------------------------------------------------|
-# ^ | "d"    | `dnorm` | evaluates the probability density (or mass) function, f(x)        |
-# ^ | "p"    | `pnorm` | evaluates the cumulative density function, F(x)=P[X <= x], hence  |
-# ^ |        |         | finds the probability the specified random variable is less than  |
-# ^ |        |         | the given argument.                                               |
-# ^ | "q"    | `qnorm` | evaluates the inverse cumulative density function (quantiles),    |
-# ^ |        |         | F^{-1}(q) i.e. given a probability q it returns the value x such  |
-# ^ |        |         | that P[X <= x] = q. Used to obtain critical values associated     |
-# ^ |        |         | with particular probabilities q.                                  |
-# ^ | "r"    | `rnorm` | generates random numbers                                          |
-# ^   
-# ^   We've already seen one example with `rnorm` to generate random Normal values. The appropriate
-# ^ functions for Normal, t and chi^2 distributions are given below, along with the optional
-# ^ l parameter arguments.
-# ^ 
-# ^     + Normal distribution: `dnorm`, `pnorm`, `qnorm`, `rnorm`.
-# ^                            Parameters: `mean` (mu) and `sd` (sigma).
-# ^     + t distribution: `dt`, `pt`, `qt`, `rt`. 
-# ^                       Parameter: `df`.
-# ^     + chi^2 distribution: `dchisq`, `pchisq`, `qchisq`, `rchisq`. 
-# ^                       Parameter: `df`.
-# ^ 
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-#
-# Exercise 3.3:
-# ~~~~~~~~~~~~~
-#
-# To produce the Normal density curve, we need to evaluate the pdf of N(μ, σ^2/n) over the 
-# plotting range of the histogram:
-#
-# * First, construct a sequence of values (using `seq`) which starts at the minimum of `xbar` 
-#   and goes up to the maximum value of `xbar` and has length `100`. 
-#   Save this vector as `seqx`.
-#   Hint: You'll need the `seq`, `min`, and `max` functions - see "R Help 4 Vectors" for help
-#         if needed.
-# * We can use `dnorm` to evaluate the normal density function at the values `seqx` and save
-#   these values as `ndens`. Try this now.
-#   Make sure you supply the correct value of μ to the `mean` argument, and σ/√n to the `sd`
-#   argument, otherwise your pdf won't match the histogram. 
-
-
-
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# ^ TECHNIQUE: 
-# ^ 
-# ^ We can use R's line drawing function `lines` to add an (approximate) curve to a plot. 
-# ^ To draw a function f(x) on an existing plot, we evaluate the function f at a sequence of x 
-# ^ points and then use `lines` to draw connected line segments between each (x,f(x)) pair to 
-# ^ form the curve.
-# ^ 
-# ^ For example, if we save the x values in a vector `xs` and the f(x) values in a vector `fs`
-# ^ then the command to add the curve to the plot is:
-# ^ 
-# ^   lines(x=xs, y=fs)
-# ^ 
-# ^ Like other plotting functions, `lines` can be modified by adding argumets to specify 
-# ^ different line types, widths, and colours. See the "R Help 8: Advanced plots" page for 
-# ^ detail on how to customise your curve.
-# ^ 
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-#
-# Exercise 3.4:
-# ~~~~~~~~~~~~~
-#  * Use the `lines` function to add a solid blue curve between the points `x=seqx` and 
-#    `y=ndens` to your histogram. 
-#
-#  * _Note:_ if your density curve goes off the top of your plot, then try redrawing the 
-#    histogram but set the limits of the vertical axis by passing the `ylim=c(a,b)` argument 
-#    to the `hist` function where `a` and `b` are your desired upper and lower limits of the
-#    y axis. Use a lower limit of `0` and choose the upper limit to be large enough to see the
-#    entire curve.
-#
-#  * How does the distribution of our sample of xbar values compare (in terms of shape, location,
-#    and spread) with the theoretical distribution of Xbar? Does it agree with the theory?
-#
-
-
-hist(xbar,freq=FALSE,breaks=15)
-tmpx <- seq(min(xbar)-1, max(xbar)+1, length=100)
-ndens <- dnorm(tmpx, mean=17, sd=5/sqrt(5))
-lines(x=tmpx, y=ndens, col='blue')
-
-
-
-
-
-
-# ========================================================================================
-#
-# 4. Investigating S^2 and T
-#
-#
-# Now lets look move on to investigate the sample variances and standardised values. If our data
-# are normal, then a multiple of the sample variance (n−1) S^2 / σ^2 should follow a χ2 
-# distribution with n−1 degrees of freedom. Let’s compute the sample variances for our 100 
-# samples and investigate this using the techniques above.
-#
-#
-#
-# Exercise 4.1:
-# ~~~~~~~~~~~~~~
-#
-# * Apply the `var` function to each of the samples in `xMatrix` to create a vector of 100
-#   sample variances, s^2. 
-#   Call these `svar`.
-# * The theory says that the random quantity (n−1)S^2/σ^2 has a χ2_(n-1) distribution. Re-scale
-#   the sample variances by multiplying `svar` by (n−1)/σ^2, and call this `svarScl` (for 'scaled
-#   sample variance').
-# * Calculate the mean and variance of `svarScl` - do they agree with the mean and variance
-#   of the appropriate χ2_(n-1) distribution? 
-
-svar <- apply(xMatrix, MARGIN=1, FUN=var)
-svarScl <- (5-1)/5^2 * svar
-mean(svarScl) ## expect mean = df = (n-1) = 4
-var(svarScl)  ## expect var = 2*df = 2*(n-1) = 8
-
-
-
-
-#
-# Exercise 4.2:
-# ~~~~~~~~~~~~~~
-#
-# * Go back to your code from Exercises 3.2-3.4 to plot the histogram of $\bar{x}$ with a 
-#   normal density curve on top. 
-#   Adjust the code to instead plot a histogram of s^2 and overlay the density function for
-#   a χ2_n−1 distribution using the `dchisq` function.
-# * Do the samples appear consistent with the theoretical distribution?
-
-hist(svarScl,freq=FALSE,breaks=15,ylim=c(0,0.2))
-tmpx <- seq(0, max(svarScl), length=100)
-chisqdens <- dchisq(tmpx, df=(5-1))
-lines(x=tmpx, y=chisqdens, col='red', lwd=2)
-
-
-
-#
-# Exercise 4.3:
-# ~~~~~~~~~~~~~~
-#
-# * According to the theory, Xbar and S^2 should be independent. Use `plot` to produce a 
-#   scatterplot of xbar against s^2.
-#   Do they appear to be independent? What features of the plot support this conclusion?
-
-plot(x=xbar, y=svar) ## we expect to see unstructured random scatter with no pattern
-
-
-
-
-
-# The final theoretical result concerns the distribution of the sample means when standardised 
-# by the sample variance, 
-#
-# T = (Xbar−μ)/(s/√n).
-#
-# We know that if we use the population variance, σ^2, in this calculation instead of s^2, then
-# the standardised values are N(0,1). However, as this expression uses the sample variance the
-# distribution is no longer normal, and is t-distributed instead to account for the extra 
-# uncetainty we have introduced by using an estimate of σ^2.
-
-
-#
-# Exercise 4.4:
-# ~~~~~~~~~~~~~~
+# Our likelihood calculations begin with writing down the likelihood function of our
+# data. For a single observation $X=x$ from a Poisson distribution, the likelihood is
+# the the probability of observing $X=x$ written as a function of the parameter lambda:
 # 
-# * Using your values of `xbar` and `svar`, create a new vector `tvals` with elements equal to
-#   (xbar−μ)/(s/√n) for each sample of size 5.
-# * Using the techniques above, investigate the behaviour and distribution of `tvals` (inspect
-#   the mean and variance, construct a histogram, overlay the appropriate density curve).
-
-tvals <- (xbar-17)/sqrt(svar/5)
-mean(tvals) ## expect mean=0
-var(tvals)  ## expect var=df/(df-2)
-
-hist(tvals,freq=FALSE,breaks=15)
-tmpx <- seq(min(tvals), max(tvals), length=100)
-tdens <- dt(tmpx, df=(5-1))
-lines(x=tmpx, y=tdens, col='red', lwd=2)
+# l(lambda) = P[X=x | lambda] = (e^{-lambda} lambda^x)/(x!).
+# 
+# To begin with, suppose we observe a count of X=5.
 
 
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+# * Write a simple function called `poisson` that takes arguments `lambda` 
+#    which evaluates the Poisson probability P[X=5 | lambda].
+#   Hint: You will need the `exp` and `factorial` functions.
+# * Evaluate the Poisson probability for X=5 when lambda=7 - you should get a 
+#   value of 0.1277167.
 
-# ========================================================================================
+
+
+'poisson' <- function(lambda){
+  p <- exp(-lambda)*lambda^5/factorial(5)
+  return(p)
+}
+poisson(7)
+
+
+
+
+# What we have just created is the likelihood function, l(lambda), for the Poisson
+# parameter lambda given a single observation of X=5.
+# 
+# Before we consider a larger data problem, let's briefly explore this simplest case
+# of a Poisson likelihood. Let's begin with a plot of the likelihood function itself.
+
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^ 
+# ^ **Using `curve` to plot a funtion**
+# ^ 
+# ^ Given an expression for a function f(x), we can plot the values of f for various 
+# ^ values of x in a given range. This can be accomplished using an R function called
+# ^ `curve`. The main syntax for `curve` is as follows:
+# ^ 
+# ^ curve(expr, from = NULL, to = NULL, add = FALSE,...)
+# ^ 
+# ^ The arguments are:
+# ^ * expr: an expression or function in a variable x which evaluates to the function
+# ^          to be drawn. Examples include `sin(x)` or `x+3*x^2`
+# ^  * from, `to`: specifies the range of `x` for which the function will be plotted
+# ^  * add: if `TRUE` the graph will be added to an existing plot; if `FALSE` a new 
+# ^         plot will be created
+# ^  * ...: any of the standard plot customisation arguments can be given here 
+# ^         (e.g. `col` for colour, `lty` for line type, `lwd` for line width)
+# ^ 
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+
+# For example, the following code when evaluated produces the plot below:
+# 
+  curve(x^3 - 5*x, from = -4, to = 4)
+
+
+
 #
-# 5. Probability Integral Transform
+# Exercise:
+# ~~~~~~~~~~~~~
+# * Try out using `curve` to draw a quick plot of the following functions:
+#   * f(x)=3x^2+x over [0,10]
+#   * f(x)=sin(x)+cos(x)$ over [0,2pi] as a blue curve. 
+#      Note: R defines `pi` as the constant pi
+#   * Use the `add=TRUE` option to superimpose g(x)=0.5sin(x)+cos(x) as a red 
+#      curve over [0,2pi] on the previous plot.
+# * Now, use `curve`  and your `poisson` function to draw a plot of your Poisson
+#      likelihood for lambda in [0.1, 20].
+# * By eye, what is the value lambdahat of lambda which maximises the 
+#      likelihood?
+
+
+curve(  3*x^2 + x, from=1, to=10)
+curve(sin(x)+cos(x), from=0, to=2*pi, col='blue')
+curve(0.5*sin(x)+cos(x), from=0, to=2*pi, add=TRUE, col='red')
+
+curve(poisson(x), from=0, to=20)
+
+
+
+
+# Typically, we usually work with the log-likelihood L(lambda)=log l(lambda),
+# rather than the likelihood itself. This can often make the mathematical
+# maximisation simpler, the numerical computations more stable, and it is also
+# intrinsically connected to the idea of *information* and variance (which we will
+# consider later).
+
+
 #
-# All of the calculations we performed in the preceding section required us to be able to
-# generate random numbers from a particular distribuion, in this case the Normal. We will 
-# see (or have seen) in Lecture 2 that we can generate random numbers from (almost) any 
-# distribution by simply applying an appropriate transformation to simple standard uniform 
-# random numbers.
+# Exercise:
+# ~~~~~~~~~~~~~
 #
-# The theory we require is known as the probability integral transform, and goes as follows. 
-# Let X be a continuous random quantity with cdf F_X(x), and let U be a standard uniform 
-# random quantity, U ∼ U[0,1]. Then 
+# * Modify your `poisson` function to compute the logarithm of the Poisson 
+#   probability, and call this new function `logPoisson`. You will need to use the
+#   `log` function.
+# * Re-draw the plot to show the log-likelihood against lambda. Do you find the same
+#   maximum value lambdahat?
+
+  
+'logPoisson' <- function(lambda){
+  ## lazy way
+  #p <- log(exp(-lambda)*lambda^5/factorial(5))
+  ## lazier way
+  #p <- log(poisson(lambda))
+  ## smarter way
+  p <- -lambda+5*log(lambda)-log(factorial(5))
+  return(p)
+}
+curve(logPoisson(x), from=0, to=20)
+
+
+
+
 #
-#  1. the random quantity Y=F_X(X) has a standard uniform distribution U[0,1];
 #
-#  2. the random quantity W=F^{−1}_X(U) has cdf equal to F_X, and thus W has the same 
-#     distribution as X.
+# 2.  Likelihood methods for real data
+# ==================================================================================
 #
-# It is the second part of this theorem that is of relevance to generating random numbers from
-# specific distributions. So long as we can find F^{−1}_X for the distribution we want, we can
-# generate uniform random numbers, u, and apply the transformation F^{−1}_X(u) to produce random
-# numbers from another distribution which have the distribution of X. This process is known as
-# inverse sampling:
+# 
+# The Poisson distribution has been used by traffic engineers as a model for light 
+# traffic. This assumption is based on the rationale that if the rate is approximately
+# constant and the traffic is light (so the individual cars move independently of 
+# each other), then the distribution of counts of cars in a given time interval or 
+# space area should be nearly Poisson (Gerlough and Schuhl 1955).
+# 
+# The following table shows the number of right turns during three hundred 3-minute
+# intervals at a specific junction.
+
+
+traffic <- rep(0:12, c(14,30,36,68,43,43,30,14,10,6,4,1,1))
+
+# Note that we interpret these data as 14 observations of the value 0, 
+# 30 observations of the value 1, and so forth.
+
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+# * Evaluate the piece of code above to create the vector `traffic` corresponding to the above data set.
+# * Plot a `hist`ogram of the data. Does an assumption of a Poisson distribution appear reasonable?
+
+
+
+
+hist(traffic)
+## we would expect a skewed distribution with a long tail to the right
+## mostly, this looks okay, though perhaps a few more observations at zero than we might expect
+
+
+
+
+# If we suppose a Poisson distribution might be a good choice of distribution for
+# this dataset, we still need to find out _which_ particular Poisson distribution 
+# is best by estimating the parameter lambda.
+# 
+# Let's begin by constructing the likelihood and log-likelihood functions for this
+# data set of 300 observations. Assuming that the observations x_1, ..., x_300 
+# can be treated as 300 i.i.d. values from Po(lambda), the log-likelihood 
+# function for the entire sample is:
+# 
+# L(lambda) = -nlambda +(sum_{i=1}^n x_i ) log lambda ,
+# 
+# up to an additive constant from the factorial terms (which we know we can ignore 
+# for the purposes of these calculations).
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+#  * Write a new functions `logLike` with a single parameter `lambda`, which 
+# evaluates the log-likelihood expression above for the `traffic` data and 
+# the supplied values of `lambda`.
+# _Hint_: Use `length` and `sum` to compute the summary statistics.
+#  * Evaluate the data log-likelihood for all lambda in `lambdavals` and plot the 
+#  log-likelihood against lambda. Without further calculations, use the plot to 
+#  have a guess at the maximum likelihood estimate lambdahat -- 
+#  we'll check this later!
+
+
+'logLike' <- function(lambda){
+  n <- length(traffic)
+  s <- sum(traffic)
+  ll <- -n*lambda + s*log(lambda)
+  return(ll)
+}
+
+curve(logLike(x), from=0,to=20, xlab=expression(lambda),ylab='log likelihood')
+
+
+
+
+
+
+#
+# 2.1 Maximising the likelihood
+# ----------------------------------------------------------------------------------
+# 
+# 
+# The maximum likelihood estimate (MLE) lambdahat for the lambda parameter of the
+# Poisson distribution is the value of lambda which maximises the likelihood
+# 
+# lambdahat = argmax_lambda l(lambda)= argmax_lambda L(lambda).
+# 
+# Therefore to find the MLE, we must maximise l or L. We know we can do this 
+# analytically for certain common distributions, but in general we'll have to 
+# optimise the function numerically instead. For such problems, `R` provides 
+# various functions to perform a numerical optimisation of a give function 
+# (even one we have defined ourself). The function we will focus on is `optim`:
+#   
+
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^ 
+# ^ 
+# ^ `R` offers several optimisation functions, however the one we shall be using 
+# ^ today is `optim` which is one of the most general optimisation functions. 
+# ^ This generality comes at the price of having a lot of optional parameters that
+# ^ need to be specified.
+# ^ 
+# ^ For our purposes, we're doing a 1-dimensional optimisation of a given function 
+# ^ named `logLike`. So the syntax we will use to _maximise_ we call optim  as follows
+# ^ 
+
+optim(start, logLike, lower=lwr, upper=upr, method='Brent', control=list(fnscale=-1))
+
+# ^ 
+# ^ The arguments are:
+# ^    * `start` : an initial value for lambda at which to start the optimisation.
+# ^                *Replace this with a sensible value.*
+# ^    * `logLike` : this is the function we're optimising. In general, we can 
+# ^               replace this with any other function.
+# ^ * `lower=lwr, upper=upr` : lower and upper bounds to our search for lambdahat.
+# ^               *Replace `lwr` and `upr`  with appropriate numerical values*;
+# ^               an obvious choice for this problem is the min and max of our data.
+# ^ * `method='Brent'` : this selects an appropriate optimisation algorithm for a 1-D 
+# ^               optimisation between specified bounds. Other options are available
+# ^               for other classes of optimisation problem.
+# ^ * `control=list(fnscale=-1)` : this looks rather strange, but is simply telling
+# ^               `optim` to *max*imise the given function, rather than *min*imise
+# ^               which is the default (it's instructing R to scale the function
+# ^               by a factor of $-1$ and minimise the result).
+# ^ 
+# ^ `optim` returns a number of values in the form of a list. The relevant components are:
+# ^ 
+# ^    * `par` : the optimal value of the parameter
+# ^    * `value` : the optimum of the function being optimised.
+# ^    * `convergence`: if `0` this indicates that the optimisation has completed successfully.
+# ^ 
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+#   * Use `optim` to maximise the `logLike` function. You should choose an 
+#     appropriate initial value for lambda, as well as sensible `upper` and 
+#     `lower` bounds.
+#   * What value of lambdahat do you obtain? How does this compare to 
+#     your guess at the MLE?
+#   * We know from lectures that the lambdahat = Xbar -- evaluate the 
+#     sample mean of the `traffic` data. Does this agree with your results from
+#     directly maximising the log-likelihood?
+
+
+ret <- optim(1, logLike, lower=0, upper=12, method='Brent', control=list(fnscale=-1))
+ret$par
+mean(traffic)
+# perfect agreement
+
+
+# You should see output something like this:
+
+## $par
+## [1] 3.893333
+## 
+## $value
+## [1] 419.6223
+## 
+## $counts
+## function gradient 
+##       NA       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+
+
+
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^ TECHNIQUE: 
+# ^ 
+# ^ 
+# ^ The output of `optim` is in the form of a `list`. Unlike vectors, `list`s can 
+# ^ combine many different variables together (numbers, strings, matrices, etc) and
+# ^ each element of a list can be given a name to make it easier to access.
+# ^ 
+# ^ For example, we can create our own lists using the `list` function:
+# ^ 
+# ^  test <- list(Name='Donald', IQ=-10, Vegetable='Potato')`
+# ^ 
+# ^ Once created, we can access the named elements of the list using the `$` operator.
+# ^ For example,
+# ^ 
+# ^  test$IQ
+# ^ 
+# ^ will return the value saved to `IQ` in the list, i.e. `-10`. RStudio will show 
+# ^ auto-complete suggestions for the elements of the list after you press `$`, which
+# ^ can help make life easier.
+# ^
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+# 
+# We can use this `$` operator to extract the MLE value from `optim` by first 
+# saving the results to a variable, called `results` say, and then extracting the
+# list element named `par`, which corresponds to the maximising value of lambda.
+
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+# * Extract the optimal value of lambda from the output of `optim` and save it 
+# to a new variable called `mle`.
+# * Re-draw your plot of the log-likelihood function, and use `abline` to:
+#     * Add a red solid vertical line at lambda=lambdahat.
+#     _Hint:_ pass the `col='red'` argument to your plotting function.
+#     * Add a blue dashed vertical line at lambda=xbar.
+# * Do the results agree with each other, and with your guess at lambdahat?
+#
+
+
+
+mle <- ret$par
+plot(x=lambdavals, y=ll,ty='l')
+abline(v=mle,col='red')
+abline(v=mean(traffic), col='blue', lty=2)
+
+
+
+# Let's return to the original distribution of the data. The results of our 
+# log-likelihood analysis suggest that a Poisson distribution with parameter 
+# lambdahat is the best choice of Poisson distributions for this data set.
+
+ 
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+# * Re-draw the `hist`ogram of the `traffic` data.
+# * Modify your `poisson` function to evaluate the Poisson probability
+#    P[X=x] when X ~ Po(lambdahat). Save the function as `poissonProb`.
+# * The expected number of Poisson counts under this Po(lambdahat)
+#   distribution will be 300P[X=x], for x=0,...,16. Use the 
+#   `curve` function to `add` draw this function over your histogram in red.
+#   (We will ignore the fact that $X$ should be discrete for the time-being.)
+# * Does this look like a good fit to the data?
+
+ hist(traffic)
+ xs <- 0:16
+ "poissProb" <- function(x) { 
+   return( exp(-mle)*mle^x/factorial(x) )
+ }
+ curve(300*poissProb(x),from=0,to=16,col='red',lwd=2,add=TRUE)
+ ## seems generally okay, though counts are high at zero as noted earlier.
+
+ 
+# We will return to the question of fitting distributions to data and the 
+# "goodness of fit" later next term.
+
+ 
+#
+# 2.2 Information and inference
+# ----------------------------------------------------------------------------------
+# 
+# For an iid sample X_1,...,X_n from a sufficiently nicely-behaved ("regular") density 
+# function f(x_i | theta) with unknown parameter theta, the sampling distribution 
+# of the MLE thetahat is such that
+# 
+# thetahat ~~> N(theta, 1/(I_n(theta)) ),
+# 
+# as n -> infinity. For large samples, we can also replace the expected Fisher 
+# information in the variance with the observed information, I(thetahat) = -L''(thetahat)
+# instead, Whilst we may be used to finding Normal distributions in unusual places,
+# this result is noteworthy as we never assumed any particular distribution of our
+# data here. This result therefore provides us with a general method for making 
+# inferences about parameters of distributions and their MLEs for problems involving
+# large samples!
 #  
-# For example, let’s consider the exponential distribution with ‘rate’ λ>0 which has c.d.f.
-#
-#  F(y) = 1 − exp(−λy)
-#
-# for y ≥ 0 and 0 elsewhere. 
-#
-# If we set U=F(y), then we can find the inverse CDF as (check this result!)
-#
-#  Y = −log(1−U)/λ.
-#
-# Then by the theorem above, if U ~ U[0,1] the random quantity Y must have an exponential 
-# distribution  with rate λ.
-#
-# Let’s investigate this further by verifing the result numerically:
-
-#
-# Exercise 5.1:
-# ~~~~~~~~~~~~~
+# In particular, we can apply this to our Poisson data problem above to construct a
+# large-sample approximate 100(1-alpha)% confidence interval for lambda in the form:
 # 
-# * Generate a sample of 1000 random numbers from the uniform distribution on [0,1] as the
-#   vector `us`. You'll need the `runif` function.
-#
-# * Use the result above to transform the uniform sample into an exponential distribution with
-#   rate λ (pick your own value of λ>0). Call these `ys`.
-#
-# * Plot a histogram of `ys`` and overlay the density function for the exponential distribution
-#   using your value of λ - you’ll need to use the `dexp`` function to evaluate the exponential
-#   density.
-#
-
-
-us <- runif(1000)
-ys <- -log(1-us)/3 ## choose lambda=3
-
-hist(ys,freq=FALSE,breaks=15)
-tmpx <- seq(min(ys), max(ys), length=100)
-xpdens <- dexp(tmpx, rate=3)
-lines(x=tmpx, y=xpdens, col='red', lwd=2)
-
-
-
-
-#
-# Exercise 5.2:
-# ~~~~~~~~~~~~~
+#    lambdahat +/- z*{alpha/2} 1/(sqrt[-L''(lambdahat)]),
 # 
-# * R has defined the inverse CDF functions for most standard distributions, these are the 
-#   ‘quantile’ functions that  begin with `q` for each standarad distribution, e.g. `qnorm`,
-#    `qchisq`, etc. 
-#
-# * Generate a random sample of size 1000 from a Normal distribution with zero mean and unit
-#   variance using only the two functions `runif` and `qnorm`. Check the distribution of your 
-#   random numbers in the same way as above.
+# where z*{alpha/2} is the alpha/2 critical value of a standard Normal distribution
+# and we have estimated the expected Fisher information I_n(theta) by the observed
+# information I(lambdahat}) = -L''(lambdahat).
 
-tmpu <- runif(1000)
-randNormals <- qnorm(tmpu)
-hist(randNormals, freq=FALSE,breaks=15)
-tmpx <- seq(min(randNormals), max(randNormals), length=100)
-ndens <- dnorm(tmpx)
-lines(x=tmpx, y=ndens, col='red', lwd=2)
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+#  * We can request that `R` computes the second derivative at the maximum, 
+#    L''(lambdahat), as part of the maximisation process. To do this, re-run your
+#    optimisation, but add the additional argument `hessian=TRUE`.
+
+ 
+ ret <- optim(1, logLike, method='Brent', lower=0, upper=100, control=list(fnscale=-1), hessian=TRUE)
+ 
+ 
+ 
+ 
+ 
+ 
+#
+# You should now obtain R output that looks like this:
+#
+## $par
+## [1] 3.893333
+## 
+## $value
+## [1] 419.6223
+## 
+## $counts
+## function gradient 
+##       NA       NA 
+## 
+## $convergence
+## [1] 0
+## 
+## $message
+## NULL
+## 
+## $hessian
+##           [,1]
+## [1,] -77.05481
+ 
+ 
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+# * The output from `optim` will now contain an additional element named `hessian`.
+#   Extract this element, multiply by -1, and save it as `obsInfo`.
+# * To get the variance of lambdahat we need to invert the information matrix. We
+#   can achieve this using R's `solve` function. Try this now on `obsInfo`. Save 
+#   this to `varMLE`.
+# * As `obsInfo` is just a scalar (or a $1\times1$ matrix), the invers of the matrix
+#   is the same as the reciprocal $\frac{1}{I(\widehat{\lambda})}$ - check this now!
+# * Finally, `varMLE` will be in the form of a $1\times 1$ matrix rather than a 
+#   scalar (as the Hessian matrix is a matrix of the second order partial derivatives).
+#   To extract the value from within the matrix, run the following code
+#
+# varMLE <- varMLE[1,1]
+
+ 
+
+obsInfo <- -1*ret$hessian
+varMLE <- solve(obsInfo)
+varMLE <- varMLE[1,1]
+
+
+
+#
+# Exercise:
+# ~~~~~~~~~~~~~
+#
+# * Use your standard Normal tables (or R's built-in function `qnorm`) to find the
+#   critical z*{alpha/2} value for a 95% confidence interval. Save this as `zcrit`.
+# * Combine `mle`, `zcrit`, and `varMLE` to evaluate an approximate 95% Wald 
+#   confidence interval for lambda.
+# * Return (and possibly re-draw) the plot of your log-likelihood function, with 
+#   the MLE indicated as a vertical line. Add the limits of the confidence interval
+#   to your plot as vertical green lines.
+# * What does the confidence interval suggest about the reliability of your estimate.
+# * Does the log-likelihood look reasonably quadratic near the MLE? Does this affect
+#   your conclusions, and how would you investigate this further?
+
+
+  
+zstar <- qnorm(0.975)
+upr <- mle + zstar * sqrt(1/obsInfo)
+lwr <- mle - zstar * sqrt(1/obsInfo)
+ci <- c(lwr,upr)
+ci
+
+curve(logLike, from=0.1, to=20)
+abline(v=mle,col='red')
+abline(v=ci, col='green')
+## the interval actually looks quite tight, suggesting a low level of uncertainty.
+
+## However, we do note that the overall curve does not look very quadratic. We should probably
+##   look closer at the validity of the quadratic approximation near the MLE.
+curve(logLike, from=3, to=5)
+abline(v=mle,col='red')
+abline(v=ci, col='green')
+## actually, this looks a lot better. Things look well-behaved near the MLE
+
 
 
 

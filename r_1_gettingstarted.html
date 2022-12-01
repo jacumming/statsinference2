@@ -13,8 +13,8 @@
 
 <title>R Techniques 1: Getting Started</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
-<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -62,6 +62,7 @@ if (window.hljs) {
 
 
 
+
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
 
@@ -86,6 +87,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -143,11 +147,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -176,8 +184,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -185,16 +193,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -311,12 +312,12 @@ div.tocify {
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -328,7 +329,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 1
      
     <span class="caret"></span>
@@ -349,7 +350,7 @@ div.tocify {
   </ul>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 2
      
     <span class="caret"></span>
@@ -382,7 +383,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-question-circle"></span>
      
     R Help
@@ -444,53 +445,125 @@ div.tocify {
 
 
 <div id="getting-started" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Getting Started</h1>
-<p><em>R</em> is an open source programming language for statistical computing and graphics that is widely used among statisticians for data analysis. As <em>R</em> is a programming language and not a program itself (like Excel) we will need some programming skills as even the simplest data analysis will require writing and evaluating small fragments of code to carry out the analysis we require. To make life easier, we will be using <em>RStudio</em> as to write, edit, and evaluate our <em>R</em> code.</p>
-<p>Both <em>R</em> and RStudio are available on the University network. You will find R Studio on the AppHub on your Desktop.</p>
+<h1><span class="header-section-number">1</span> Getting Started</h1>
+<p><em>R</em> is an open source programming language for statistical
+computing and graphics that is widely used among statisticians for data
+analysis. As <em>R</em> is a programming language and not a program
+itself (like Excel) we will need some programming skills as even the
+simplest data analysis will require writing and evaluating small
+fragments of code to carry out the analysis we require. To make life
+easier, we will be using <em>RStudio</em> as to write, edit, and
+evaluate our <em>R</em> code.</p>
+<p>Both <em>R</em> and RStudio are available on the University network.
+You will find R Studio on the AppHub on your Desktop.</p>
 <div id="rstudio" class="section level2" number="1.1">
-<h2 number="1.1"><span class="header-section-number">1.1</span> RStudio</h2>
-<p>The default RStudio environment is divided in 4 panels, with the default arrangement illustrated below. Going anticlockwise, the four panels are: Code; Console; Plots, Help, and Files; and Workspace and History.</p>
+<h2><span class="header-section-number">1.1</span> RStudio</h2>
+<p>The default RStudio environment is divided in 4 panels, with the
+default arrangement illustrated below. Going anticlockwise, the four
+panels are: Code; Console; Plots, Help, and Files; and Workspace and
+History.</p>
 <p><img src="rstudio.png" /></p>
 <ul>
-<li><p><strong>Code Editor</strong> – the main editor for your <em>R</em> code. Your code will not be evaluated until you “Run” it. This pane is hidden at first, however when you load or start a new <em>R</em> script file it will be displayed. R code can be entered here, and it provides support such as auto-complete using <code>[Tab]</code>, colour highlighting, and additional buttons and menu items to help edit and evaluate your code. In particular, a single line of code (or any selected block of code) can be evaluated in one go by typing <code>[Ctrl]+[Enter]</code>, and the whole file can be evaluated with <code>[Ctrl]+[Shift]+[S]</code>.</p></li>
-<li><p><strong>R Console</strong> – this pane is where your code from the Editor is evaluated by <em>R</em>. You can also use the console here to execute quick calculations that you don’t need to save. Commands entered in the <em>Console</em> tab are immediately executed by <em>R</em>, and the results displayed on the following line. In this way, <em>R</em> can be used as a simple calculator by typing directly into the <em>Console</em> window. However, for more complex calculations with many steps it is preferable to write the code in a script file using the <em>Code</em> pane first, and then evaluate it in the <em>Console</em>. Note: when in the <em>Console</em> pane, you can use the <i class="fa fa-toggle-up"></i> (up arrow) and <i class="fa fa-toggle-down"></i> (down arrow) keys to navigate through previous commands (e.g. to correct mistakes).</p></li>
-<li><p><strong>Plots, Help, and Files</strong> – this pane has multiple roles indicated by the tabs along its top. The <em>Plots</em> tab will show the results of any plots you produce in <em>R</em>. The <em>Help</em> tab is where RStudio will display any help files. The <em>Files</em> tab provides a simple file viewer to quickly navigate between and open files.</p></li>
-<li><p><strong>Workspace and History</strong> – this pane has two functions, also indicated by tabs. The <em>Workspace</em> (or Environment) tab lists all the variables you have currently available in this session of R, along with their types and values. The <em>History</em> tab shows a list of all the <em>R</em> commands you have evaluated in the console.</p></li>
+<li><p><strong>Code Editor</strong> – the main editor for your
+<em>R</em> code. Your code will not be evaluated until you “Run” it.
+This pane is hidden at first, however when you load or start a new
+<em>R</em> script file it will be displayed. R code can be entered here,
+and it provides support such as auto-complete using <code>[Tab]</code>,
+colour highlighting, and additional buttons and menu items to help edit
+and evaluate your code. In particular, a single line of code (or any
+selected block of code) can be evaluated in one go by typing
+<code>[Ctrl]+[Enter]</code>, and the whole file can be evaluated with
+<code>[Ctrl]+[Shift]+[S]</code>.</p></li>
+<li><p><strong>R Console</strong> – this pane is where your code from
+the Editor is evaluated by <em>R</em>. You can also use the console here
+to execute quick calculations that you don’t need to save. Commands
+entered in the <em>Console</em> tab are immediately executed by
+<em>R</em>, and the results displayed on the following line. In this
+way, <em>R</em> can be used as a simple calculator by typing directly
+into the <em>Console</em> window. However, for more complex calculations
+with many steps it is preferable to write the code in a script file
+using the <em>Code</em> pane first, and then evaluate it in the
+<em>Console</em>. Note: when in the <em>Console</em> pane, you can use
+the <i class="fa fa-toggle-up"></i> (up arrow) and
+<i class="fa fa-toggle-down"></i> (down arrow) keys to navigate through
+previous commands (e.g. to correct mistakes).</p></li>
+<li><p><strong>Plots, Help, and Files</strong> – this pane has multiple
+roles indicated by the tabs along its top. The <em>Plots</em> tab will
+show the results of any plots you produce in <em>R</em>. The
+<em>Help</em> tab is where RStudio will display any help files. The
+<em>Files</em> tab provides a simple file viewer to quickly navigate
+between and open files.</p></li>
+<li><p><strong>Workspace and History</strong> – this pane has two
+functions, also indicated by tabs. The <em>Workspace</em> (or
+Environment) tab lists all the variables you have currently available in
+this session of R, along with their types and values. The
+<em>History</em> tab shows a list of all the <em>R</em> commands you
+have evaluated in the console.</p></li>
 </ul>
-<p>For more detailed help on the RStudio programming environment, see <a href="https://www.rstudio.com/wp-content/uploads/2016/01/rstudio-IDE-cheatsheet.pdf">the RStudio cheatsheet.</a></p>
+<p>For more detailed help on the RStudio programming environment, see <a
+href="https://www.rstudio.com/wp-content/uploads/2016/01/rstudio-IDE-cheatsheet.pdf">the
+RStudio cheatsheet.</a></p>
 </div>
 <div id="packages-and-libraries" class="section level2" number="1.2">
-<h2 number="1.2"><span class="header-section-number">1.2</span> Packages and libraries</h2>
-<p><em>R</em> packages are collections of functions and data sets developed by the community. They increase the power of <em>R</em> by improving existing base <em>R</em> functionalities, or by adding new ones.</p>
-<p>Most of the time we’ll be happy with the core functionality of <em>R</em> but sometimes we wil need to load packages to access specific data sets or functions that are not provided by default.</p>
+<h2><span class="header-section-number">1.2</span> Packages and
+libraries</h2>
+<p><em>R</em> packages are collections of functions and data sets
+developed by the community. They increase the power of <em>R</em> by
+improving existing base <em>R</em> functionalities, or by adding new
+ones.</p>
+<p>Most of the time we’ll be happy with the core functionality of
+<em>R</em> but sometimes we wil need to load packages to access specific
+data sets or functions that are not provided by default.</p>
 <div id="library" class="section level3" number="1.2.1">
-<h3 number="1.2.1"><span class="header-section-number">1.2.1</span> Load a package with <code>library</code></h3>
-<p>A package called <code>packagename</code> is loaded using the following command:</p>
+<h3><span class="header-section-number">1.2.1</span> Load a package with
+<code>library</code></h3>
+<p>A package called <code>packagename</code> is loaded using the
+following command:</p>
 <pre class="r"><code>library(&quot;packagename&quot;)</code></pre>
-<p>In particular, we will often need the <code>durham</code> package as it contains many of the data sets we will be working with. We load this package as follows</p>
+<p>In particular, we will often need the <code>durham</code> package as
+it contains many of the data sets we will be working with. We load this
+package as follows</p>
 <pre class="r"><code>library(&quot;durham&quot;)</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/library.html">library</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/library.html">library</a></p>
 </div>
 <div id="data" class="section level3" number="1.2.2">
-<h3 number="1.2.2"><span class="header-section-number">1.2.2</span> Load a data set with <code>data</code></h3>
-<p>To use a data set provided by a package, we must first load a package using the <code>library</code> function and then we must load the data using the <code>data</code> function. For example, to load the <code>cats</code> data set from the <code>MASS</code> (Modern Applied Statistics) package, we first load the package and then call data to load the data set:</p>
+<h3><span class="header-section-number">1.2.2</span> Load a data set
+with <code>data</code></h3>
+<p>To use a data set provided by a package, we must first load a package
+using the <code>library</code> function and then we must load the data
+using the <code>data</code> function. For example, to load the
+<code>cats</code> data set from the <code>MASS</code> (Modern Applied
+Statistics) package, we first load the package and then call data to
+load the data set:</p>
 <pre class="r"><code>library(&quot;MASS&quot;)
 data(&quot;cats&quot;)</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/utils/html/data.html">data</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/utils/html/data.html">data</a></p>
 </div>
 </div>
 <div id="help" class="section level2" number="1.3">
-<h2 number="1.3"><span class="header-section-number">1.3</span> Help</h2>
+<h2><span class="header-section-number">1.3</span> Help</h2>
 <div id="help" class="section level3" number="1.3.1">
-<h3 number="1.3.1"><span class="header-section-number">1.3.1</span> Getting help on a function</h3>
-<p>To view the <em>R</em> help file for a particular function, we can either use the <code>help</code> function or the question mark <code>?</code>. For example, for help with the <code>mean</code> function both of the following commands will display the same help file in the <em>Help</em> pane</p>
+<h3><span class="header-section-number">1.3.1</span> Getting help on a
+function</h3>
+<p>To view the <em>R</em> help file for a particular function, we can
+either use the <code>help</code> function or the question mark
+<code>?</code>. For example, for help with the <code>mean</code>
+function both of the following commands will display the same help file
+in the <em>Help</em> pane</p>
 <pre class="r"><code>help(mean)
 ?mean</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/utils/html/help.html">help</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/utils/html/help.html">help</a></p>
 </div>
 <div id="help-pkg" class="section level3" number="1.3.2">
-<h3 number="1.3.2"><span class="header-section-number">1.3.2</span> Getting help on a package</h3>
-<p>To view the entire collection of help files for a particular package, we again use <code>help</code> but this time must explicitly state that we’re interested in a package. So, for help with the <code>MASS</code> package we must write</p>
+<h3><span class="header-section-number">1.3.2</span> Getting help on a
+package</h3>
+<p>To view the entire collection of help files for a particular package,
+we again use <code>help</code> but this time must explicitly state that
+we’re interested in a package. So, for help with the <code>MASS</code>
+package we must write</p>
 <pre class="r"><code>help(package=&quot;MASS&quot;)</code></pre>
 </div>
 </div>

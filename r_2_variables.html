@@ -13,8 +13,8 @@
 
 <title>R Techniques 2: Variables</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
-<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -62,6 +62,7 @@ if (window.hljs) {
 
 
 
+
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
 
@@ -86,6 +87,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -143,11 +147,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -176,8 +184,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -185,16 +193,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -311,12 +312,12 @@ div.tocify {
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -328,7 +329,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 1
      
     <span class="caret"></span>
@@ -349,7 +350,7 @@ div.tocify {
   </ul>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 2
      
     <span class="caret"></span>
@@ -382,7 +383,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-question-circle"></span>
      
     R Help
@@ -444,44 +445,71 @@ div.tocify {
 
 
 <div id="variables" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Variables</h1>
+<h1><span class="header-section-number">1</span> Variables</h1>
 <div id="var-assign" class="section level2" number="1.1">
-<h2 number="1.1"><span class="header-section-number">1.1</span> Creating variables</h2>
-<p>As in other programming languages, you can store values into a variable to access it later. We do this by using the <code>&lt;-</code> operator which is a less-than sign <code>&lt;</code> followed by a dash <code>-</code> - you can think of this as an arrow assigning a value to a name. So to store the value of <code>42</code> in a variable <code>x</code></p>
+<h2><span class="header-section-number">1.1</span> Creating
+variables</h2>
+<p>As in other programming languages, you can store values into a
+variable to access it later. We do this by using the <code>&lt;-</code>
+operator which is a less-than sign <code>&lt;</code> followed by a dash
+<code>-</code> - you can think of this as an arrow assigning a value to
+a name. So to store the value of <code>42</code> in a variable
+<code>x</code></p>
 <pre class="r"><code>x &lt;- 42</code></pre>
-<p>Note: we can also use the single equals sign <code>=</code> instead of <code>&lt;-</code>, though <code>&lt;-</code> is preferred (for reasons we don’t want to go into).</p>
-<p>You can print the value of a variable at any time just by typing its name in the console:</p>
+<p>Note: we can also use the single equals sign <code>=</code> instead
+of <code>&lt;-</code>, though <code>&lt;-</code> is preferred (for
+reasons we don’t want to go into).</p>
+<p>You can print the value of a variable at any time just by typing its
+name in the console:</p>
 <pre class="r"><code>x</code></pre>
 <pre><code>## [1] 42</code></pre>
-<p>Variable names in <em>R</em> can consist of any letters, numbers, and the full stop <code>.</code> or underscore <code>_</code> characters. However, variable names cannot start with a number or <code>_</code>.</p>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/assignOps.html">&lt;-</a></p>
+<p>Variable names in <em>R</em> can consist of any letters, numbers, and
+the full stop <code>.</code> or underscore <code>_</code> characters.
+However, variable names cannot start with a number or
+<code>_</code>.</p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/assignOps.html">&lt;-</a></p>
 </div>
 <div id="var-types" class="section level2" number="1.2">
-<h2 number="1.2"><span class="header-section-number">1.2</span> Variable types</h2>
-<p>Variables can take on a number of different types depending on what the value is that they represent. There are three main types of interest to us</p>
+<h2><span class="header-section-number">1.2</span> Variable types</h2>
+<p>Variables can take on a number of different types depending on what
+the value is that they represent. There are three main types of interest
+to us</p>
 <ul>
-<li><strong>Numerical</strong> - the variable is a number, e.g. <code>1</code> or <code>3.14159</code>.</li>
-<li><strong>Logical</strong> - the variable is a “logical value”: <code>TRUE</code> or <code>FALSE</code>.</li>
-<li><strong>Character</strong> or <strong>String</strong> - the variable is text enclosed in single quotes <code>''</code> or double quotes <code>""</code>, e.g. a package name, a file path, a label to a plot, etc.</li>
+<li><strong>Numerical</strong> - the variable is a number,
+e.g. <code>1</code> or <code>3.14159</code>.</li>
+<li><strong>Logical</strong> - the variable is a “logical value”:
+<code>TRUE</code> or <code>FALSE</code>.</li>
+<li><strong>Character</strong> or <strong>String</strong> - the variable
+is text enclosed in single quotes <code>''</code> or double quotes
+<code>""</code>, e.g. a package name, a file path, a label to a plot,
+etc.</li>
 </ul>
 <div id="arithmetic" class="section level3" number="1.2.1">
-<h3 number="1.2.1"><span class="header-section-number">1.2.1</span> Basic arithmetic</h3>
-<p><em>R</em> can be used as a calculator to perform the usual simple arithmetic operations. The operators are:</p>
+<h3><span class="header-section-number">1.2.1</span> Basic
+arithmetic</h3>
+<p><em>R</em> can be used as a calculator to perform the usual simple
+arithmetic operations. The operators are:</p>
 <ul>
 <li><code>+</code> addition</li>
 <li><code>-</code> subtraction</li>
 <li><code>*</code> multiplication</li>
 <li><code>/</code> division</li>
 <li><code>^</code> raise to the power.</li>
-<li><code>%%</code> modulus, e.g. <code>5 %% 3</code> is <code>2</code></li>
-<li><code>%/%</code> integer division, e.g. <code>5 %/% 3</code> is <code>1</code></li>
+<li><code>%%</code> modulus, e.g. <code>5 %% 3</code> is
+<code>2</code></li>
+<li><code>%/%</code> integer division, e.g. <code>5 %/% 3</code> is
+<code>1</code></li>
 </ul>
 <pre class="r"><code>1 + 1 </code></pre>
 <pre><code>## [1] 2</code></pre>
 <pre class="r"><code>6*7</code></pre>
 <pre><code>## [1] 42</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html">Arithmetic operators</a></p>
-<p>For working with logical variables, <em>R</em> provides the usual ‘NOT,’ ‘AND,’ and ‘OR’ operators as:</p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Arithmetic.html">Arithmetic
+operators</a></p>
+<p>For working with logical variables, <em>R</em> provides the usual
+‘NOT,’ ‘AND,’ and ‘OR’ operators as:</p>
 <ul>
 <li><code>!</code> logical ‘not’</li>
 <li><code>&amp;</code> logical ‘and’</li>
@@ -498,16 +526,22 @@ y &lt;- FALSE
 <pre><code>## [1] TRUE</code></pre>
 <pre class="r"><code>xor(x,y)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Logic.html">Logical operators</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Logic.html">Logical
+operators</a></p>
 </div>
 </div>
 <div id="var-compare" class="section level2" number="1.3">
-<h2 number="1.3"><span class="header-section-number">1.3</span> Comparing variables</h2>
-<p>A common source of logical variables is from the comparing two (or more) values. For example, we can use ‘&lt;’ to test a pair of values:</p>
+<h2><span class="header-section-number">1.3</span> Comparing
+variables</h2>
+<p>A common source of logical variables is from the comparing two (or
+more) values. For example, we can use ‘&lt;’ to test a pair of
+values:</p>
 <pre class="r"><code>3 &lt; 4</code></pre>
 <pre><code>## [1] TRUE</code></pre>
 <p>The result of such a comparison is a logical value.</p>
-<p><em>R</em> has a number of ways of comparing different values or variables. For numerical values, the comparison operators are:</p>
+<p><em>R</em> has a number of ways of comparing different values or
+variables. For numerical values, the comparison operators are:</p>
 <ul>
 <li><code>&lt;</code> less than</li>
 <li><code>&gt;</code> greater than</li>
@@ -516,14 +550,18 @@ y &lt;- FALSE
 <li><code>==</code> equal to</li>
 <li><code>!=</code> not equal to.</li>
 </ul>
-<p>Note that to test for equality we use the equals sign <em>twice</em> <code>==</code>. Using only one equals sign would try to assign the value on the right to the variable on the left - this is one reason we prefer to use <code>&lt;-</code> to assign variables.</p>
+<p>Note that to test for equality we use the equals sign <em>twice</em>
+<code>==</code>. Using only one equals sign would try to assign the
+value on the right to the variable on the left - this is one reason we
+prefer to use <code>&lt;-</code> to assign variables.</p>
 <pre class="r"><code>a &lt;- 7
 a==5</code></pre>
 <pre><code>## [1] FALSE</code></pre>
 <pre class="r"><code>a=5 ## oops
 a</code></pre>
 <pre><code>## [1] 5</code></pre>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Comparison.html">comparisons</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/Comparison.html">comparisons</a></p>
 </div>
 </div>
 

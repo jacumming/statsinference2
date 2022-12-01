@@ -13,8 +13,8 @@
 
 <title>R Techniques 7: Plots</title>
 
-<script src="site_libs/header-attrs-2.11/header-attrs.js"></script>
-<script src="site_libs/jquery-3.5.1/jquery-3.5.1.min.js"></script>
+<script src="site_libs/header-attrs-2.18/header-attrs.js"></script>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
@@ -62,6 +62,7 @@ if (window.hljs) {
 
 
 
+
 <link rel="stylesheet" href="styles.css" type="text/css" />
 
 
@@ -86,6 +87,9 @@ button.code-folding-btn:focus {
 }
 summary {
   display: list-item;
+}
+details > summary > p:only-child {
+  display: inline;
 }
 pre code {
   padding: 0;
@@ -143,11 +147,15 @@ $(document).ready(function () {
     href = "index.html";
   var menuAnchor = $('a[href="' + href + '"]');
 
-  // mark it active
-  menuAnchor.tab('show');
-
-  // if it's got a parent navbar menu mark it active as well
-  menuAnchor.closest('li.dropdown').addClass('active');
+  // mark the anchor link active (and if it's in a dropdown, also mark that active)
+  var dropdown = menuAnchor.closest('li.dropdown');
+  if (window.bootstrap) { // Bootstrap 4+
+    menuAnchor.addClass('active');
+    dropdown.find('> .dropdown-toggle').addClass('active');
+  } else { // Bootstrap 3
+    menuAnchor.parent().addClass('active');
+    dropdown.addClass('active');
+  }
 
   // Navbar adjustments
   var navHeight = $(".navbar").first().height() + 15;
@@ -176,8 +184,8 @@ $(document).ready(function () {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -185,16 +193,9 @@ $(document).ready(function () {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "&#xe258;";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -311,12 +312,12 @@ div.tocify {
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
   <div class="container">
     <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-bs-toggle="collapse" data-target="#navbar" data-bs-target="#navbar">
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="index.html">Statistical Concepts 2</a>
+      <a class="navbar-brand" href="index.html">Statistical Inference 2</a>
     </div>
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
@@ -328,7 +329,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 1
      
     <span class="caret"></span>
@@ -349,7 +350,7 @@ div.tocify {
   </ul>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Term 2
      
     <span class="caret"></span>
@@ -382,7 +383,7 @@ div.tocify {
   </a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     <span class="fa fa-question-circle"></span>
      
     R Help
@@ -444,86 +445,162 @@ div.tocify {
 
 
 <div id="standard-plots" class="section level1" number="1">
-<h1 number="1"><span class="header-section-number">1</span> Standard plots</h1>
-<p>One of the main strengths of <em>R</em> is for its strong graphic capabilities, allowing fo the creation of easily-customised and complex plots. We begin by reviewing the <em>R</em> functions for producing the standard plots: scattter plots, histograms, boxplots, and quantile plots.</p>
+<h1><span class="header-section-number">1</span> Standard plots</h1>
+<p>One of the main strengths of <em>R</em> is for its strong graphic
+capabilities, allowing fo the creation of easily-customised and complex
+plots. We begin by reviewing the <em>R</em> functions for producing the
+standard plots: scattter plots, histograms, boxplots, and quantile
+plots.</p>
 <div id="plot" class="section level2" number="1.1">
-<h2 number="1.1"><span class="header-section-number">1.1</span> Scatterplots</h2>
-<p>The <code>plot</code> function produces a scatterplot of its two arguments. For illustration, let us use the <code>mtcars</code> data set which contains information on the characteristics of 23 cars. We can plot miles per gallon against weight with the command</p>
+<h2><span class="header-section-number">1.1</span> Scatterplots</h2>
+<p>The <code>plot</code> function produces a scatterplot of its two
+arguments. For illustration, let us use the <code>mtcars</code> data set
+which contains information on the characteristics of 23 cars. We can
+plot miles per gallon against weight with the command</p>
 <pre class="r"><code>data(mtcars)
 plot(x=mtcars$wt, y=mtcars$mpg)</code></pre>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
-<p>If the argument labels <code>x</code> and <code>y</code> are not supplied, <em>R</em> will assume the first argument is <code>x</code> and the second is <code>y</code>. If only one vector of data is supplied, this will be taken as the <span class="math inline">\(y\)</span> value and will be plotted against the integers <code>1:length(y)</code>, i.e. in the sequence in which they appear in the data.</p>
-<p>We can add a plot title and axis labels by supplying optional arguments:</p>
+<p>If the argument labels <code>x</code> and <code>y</code> are not
+supplied, <em>R</em> will assume the first argument is <code>x</code>
+and the second is <code>y</code>. If only one vector of data is
+supplied, this will be taken as the <span
+class="math inline">\(y\)</span> value and will be plotted against the
+integers <code>1:length(y)</code>, i.e. in the sequence in which they
+appear in the data.</p>
+<p>We can add a plot title and axis labels by supplying optional
+arguments:</p>
 <ul>
-<li><code>main</code> - provides a title to display at the top of the plot</li>
+<li><code>main</code> - provides a title to display at the top of the
+plot</li>
 <li><code>xlab</code> - provides a label for the horizontal axis</li>
 <li><code>ylab</code> - provides a label for the vertical axis</li>
 </ul>
 <pre class="r"><code>plot(x=mtcars$wt, y=mtcars$mpg, xlab=&quot;Weight&quot;, ylab=&quot;MPG&quot;, main=&quot;MPG vs Weight&quot;)</code></pre>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
 <div id="plotty" class="section level3" number="1.1.1">
-<h3 number="1.1.1"><span class="header-section-number">1.1.1</span> Scatterplot types</h3>
-<p>Another useful optional argument is <code>type</code>, which can substantially change how <code>plot</code> draws the data. The <code>type</code> argument can take a number of different values to produce different types of scatterplot</p>
+<h3><span class="header-section-number">1.1.1</span> Scatterplot
+types</h3>
+<p>Another useful optional argument is <code>type</code>, which can
+substantially change how <code>plot</code> draws the data. The
+<code>type</code> argument can take a number of different values to
+produce different types of scatterplot</p>
 <ul>
-<li><code>type="p"</code> - draws a standard scatterplot with a point for every <span class="math inline">\((x,y)\)</span> pair</li>
-<li><code>type="l"</code> - connects adjacent <span class="math inline">\((x,y)\)</span> pairs with straight lines, does not draw points</li>
-<li><code>type="b"</code> - draws both points and connecting line segments</li>
-<li><code>type="s"</code> - connects points with ‘steps’ rather than straight lines</li>
+<li><code>type="p"</code> - draws a standard scatterplot with a point
+for every <span class="math inline">\((x,y)\)</span> pair</li>
+<li><code>type="l"</code> - connects adjacent <span
+class="math inline">\((x,y)\)</span> pairs with straight lines, does not
+draw points</li>
+<li><code>type="b"</code> - draws both points and connecting line
+segments</li>
+<li><code>type="s"</code> - connects points with ‘steps’ rather than
+straight lines</li>
 </ul>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>There are many other ways of customising the plot to use different colours, point types, etc. This is achieved by supplying additional optional arguments to <code>plot</code>, and these are described in the <a href="#plot-custom">Customising plots</a> section below.</p>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/plot.html">plot</a></p>
+<p>There are many other ways of customising the plot to use different
+colours, point types, etc. This is achieved by supplying additional
+optional arguments to <code>plot</code>, and these are described in the
+<a href="#plot-custom">Customising plots</a> section below.</p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/plot.html">plot</a></p>
 </div>
 </div>
 <div id="hist" class="section level2" number="1.2">
-<h2 number="1.2"><span class="header-section-number">1.2</span> Histograms</h2>
-<p>A <a href="https://en.wikipedia.org/wiki/Histogram">histogram</a> consists of parallel vertical bars that graphically shows the frequency distribution of a quantitative variable. The area of each bar is proportional to the frequency of items found in each class. To plot a histogram, we use the <code>hist</code> function</p>
+<h2><span class="header-section-number">1.2</span> Histograms</h2>
+<p>A <a href="https://en.wikipedia.org/wiki/Histogram">histogram</a>
+consists of parallel vertical bars that graphically shows the frequency
+distribution of a quantitative variable. The area of each bar is
+proportional to the frequency of items found in each class. To plot a
+histogram, we use the <code>hist</code> function</p>
 <pre class="r"><code>hist(mtcars$mpg)</code></pre>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-<p>As with <code>plot</code>, we can use <code>main</code> and <code>xlab</code> to set the plot title and horizontal axis label.</p>
-<p>Histogram also takes a number of arguments specific to the plotting of histograms:</p>
+<p>As with <code>plot</code>, we can use <code>main</code> and
+<code>xlab</code> to set the plot title and horizontal axis label.</p>
+<p>Histogram also takes a number of arguments specific to the plotting
+of histograms:</p>
 <ul>
-<li><code>breaks</code> - allows us to control the number of bars in the histogram. If <code>breaks</code> is set to a single number, this will be used to (suggest) the number of bars in the histogram. If <code>breaks</code> is set to a vector, the values will be used to indicate the endpoints of the bars of the histogram.</li>
-<li><code>freq</code> - if <code>TRUE</code> the histogram shows the simple frequencies or counts within each bar; if <code>FALSE</code> then the histogram shows probability densities rather than counts.</li>
+<li><code>breaks</code> - allows us to control the number of bars in the
+histogram. If <code>breaks</code> is set to a single number, this will
+be used to (suggest) the number of bars in the histogram. If
+<code>breaks</code> is set to a vector, the values will be used to
+indicate the endpoints of the bars of the histogram.</li>
+<li><code>freq</code> - if <code>TRUE</code> the histogram shows the
+simple frequencies or counts within each bar; if <code>FALSE</code> then
+the histogram shows probability densities rather than counts.</li>
 </ul>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/hist.html">hist</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/hist.html">hist</a></p>
 </div>
 <div id="boxplot" class="section level2" number="1.3">
-<h2 number="1.3"><span class="header-section-number">1.3</span> Boxplots</h2>
-<p>A boxplot provides a graphical view of the median, quartiles, maximum, and minimum of a data set. Boxplots can be created for single variables, or for all variables in a data frame. To draw a boxplot of a single variable, multiple variables, or all variables ina data frame, we simply pass the data directly to the <code>boxplot</code> function:</p>
+<h2><span class="header-section-number">1.3</span> Boxplots</h2>
+<p>A boxplot provides a graphical view of the median, quartiles,
+maximum, and minimum of a data set. Boxplots can be created for single
+variables, or for all variables in a data frame. To draw a boxplot of a
+single variable, multiple variables, or all variables ina data frame, we
+simply pass the data directly to the <code>boxplot</code> function:</p>
 <pre class="r"><code>par(mfrow=c(1,3))
 boxplot(mtcars$mpg,ylab=&#39;Miles per gallon&#39;)
 boxplot(mtcars$mpg, mtcars$cyl, ylab=&#39;MPG and Num. Cylinders&#39;)
 boxplot(mtcars,main=&quot;All car milage variables&quot;)</code></pre>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<p>A special usage of <code>boxplot</code> is to take a single variable, split that variable up into groups, and draw boxplots of the different groups. This can be useful when the grouping is an important discrete or categorical variable. For example, to show boxplots of miles-per-gallon (<code>mpg</code>) split by the number of engine cylinders (<code>cyl</code>) when both variables are defined in the same data frame (in this case <code>mtcars</code>) we would do the following:</p>
+<p>A special usage of <code>boxplot</code> is to take a single variable,
+split that variable up into groups, and draw boxplots of the different
+groups. This can be useful when the grouping is an important discrete or
+categorical variable. For example, to show boxplots of miles-per-gallon
+(<code>mpg</code>) split by the number of engine cylinders
+(<code>cyl</code>) when both variables are defined in the same data
+frame (in this case <code>mtcars</code>) we would do the following:</p>
 <pre class="r"><code>boxplot(mpg~cyl, data=mtcars, main=&quot;Car Milage Data&quot;, 
     xlab=&quot;Number of Cylinders&quot;, ylab=&quot;Miles Per Gallon&quot;)</code></pre>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>Optional arguments for <code>boxplot</code> include:</p>
 <ul>
-<li><code>horizontal</code> - if <code>TRUE</code> the boxplots are drawn horizontally rather than vertically.</li>
-<li><code>varwidth</code> - if <code>TRUE</code> the boxplot widths are drawn proportional to the square root of the samples sizes, so wider boxplots represent more data.</li>
+<li><code>horizontal</code> - if <code>TRUE</code> the boxplots are
+drawn horizontally rather than vertically.</li>
+<li><code>varwidth</code> - if <code>TRUE</code> the boxplot widths are
+drawn proportional to the square root of the samples sizes, so wider
+boxplots represent more data.</li>
 </ul>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/boxplot.html">boxplot</a></p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/boxplot.html">boxplot</a></p>
 </div>
 <div id="qqnorm" class="section level2" number="1.4">
-<h2 number="1.4"><span class="header-section-number">1.4</span> Quantile plot</h2>
-<p>Histograms leave much to the interpretation of the viewer. A better graphical way in <em>R</em> to tell whether the data is distributed normally is to look at a so-called quantile-quantile (QQ) plot. With this technique, we plot the quantiles of the data (i.e. the ordered data values) against the quantiles of a normal distribution. If the data are normally distributed, then the points of the QQ plot will lie on a straight line. Deviations from a straight line suggest departures from the normal distribution. This technique can be applied to any distribution, though <em>R</em> supports Normal quantile plots with the <code>qqnorm</code> function:</p>
+<h2><span class="header-section-number">1.4</span> Quantile plot</h2>
+<p>Histograms leave much to the interpretation of the viewer. A better
+graphical way in <em>R</em> to tell whether the data is distributed
+normally is to look at a so-called quantile-quantile (QQ) plot. With
+this technique, we plot the quantiles of the data (i.e. the ordered data
+values) against the quantiles of a normal distribution. If the data are
+normally distributed, then the points of the QQ plot will lie on a
+straight line. Deviations from a straight line suggest departures from
+the normal distribution. This technique can be applied to any
+distribution, though <em>R</em> supports Normal quantile plots with the
+<code>qqnorm</code> function:</p>
 <pre class="r"><code>qqnorm(mtcars$mpg)</code></pre>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 </div>
 <div id="par-mfrow" class="section level2" number="1.5">
-<h2 number="1.5"><span class="header-section-number">1.5</span> Combining Plots</h2>
-<p><em>R</em> makes it easy to combine multiple plots into one overall graph, using either the <code>par</code> or <code>layout</code> functions.</p>
-<p>With the <code>par</code> function, we specify the argument <code>mfrow=c(nr, nc)</code> to split the plot window into a grid of nr x nc plots that are filled in by row. For example, to divide the plot window into a 2x2 grid we call <code>par(mfrow=c(2,2))</code> as below</p>
+<h2><span class="header-section-number">1.5</span> Combining Plots</h2>
+<p><em>R</em> makes it easy to combine multiple plots into one overall
+graph, using either the <code>par</code> or <code>layout</code>
+functions.</p>
+<p>With the <code>par</code> function, we specify the argument
+<code>mfrow=c(nr, nc)</code> to split the plot window into a grid of nr
+x nc plots that are filled in by row. For example, to divide the plot
+window into a 2x2 grid we call <code>par(mfrow=c(2,2))</code> as
+below</p>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
 <p>Similarly, for 3 plots in a single column</p>
 <p><img src="r_7_plots_files/figure-html/unnamed-chunk-12-1.png" width="672" /></p>
-<p>To return to the usual single-plot display, we must call <code>par(mfrow=c(1,1))</code>.</p>
-<p>When we don’t want to arrange plots in a simple regular grid, we can use the <code>layout</code> function. See the R help for more details.</p>
-<p><i class="fa fa-question"></i> R Help: <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/par.html">par</a>, <a href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/layout.html">layout</a></p>
+<p>To return to the usual single-plot display, we must call
+<code>par(mfrow=c(1,1))</code>.</p>
+<p>When we don’t want to arrange plots in a simple regular grid, we can
+use the <code>layout</code> function. See the R help for more
+details.</p>
+<p><i class="fa fa-question"></i> R Help: <a
+href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/par.html">par</a>,
+<a
+href="https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/layout.html">layout</a></p>
 </div>
 </div>
 
